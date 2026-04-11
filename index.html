@@ -87,6 +87,12 @@ body {
   border-radius: 3px 3px 0 0;
 }
 
+.main-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 .tab-content { display: none; padding: 16px; flex: 1; }
 .tab-content.active { display: block; }
 
@@ -322,6 +328,7 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="subtitle">長崎JC 第74年度 広報委員会</div>
 </div>
 
+<div class="main-wrap">
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="tab1">基本情報</button>
   <button class="tab-btn" data-tab="tab2">配信内容</button>
@@ -415,6 +422,8 @@ textarea { resize: vertical; min-height: 60px; }
     <button class="btn btn-danger" onclick="resetForm()">入力内容をリセット</button>
   </div>
 </div>
+
+</div><!-- /main-wrap -->
 
 <div id="loadingOverlay" class="loading-overlay">
   <div class="loading-box">
@@ -707,10 +716,22 @@ let cachedFontBase64 = null;
 
 async function loadFont() {
   if (cachedFontBase64) return cachedFontBase64;
-  const fontUrl = 'font.ttf';
-  const resp = await fetch(fontUrl);
-  if (!resp.ok) throw new Error('フォント読み込み失敗。font.ttfが見つかりません。');
-  const buf = await resp.arrayBuffer();
+  const urls = [
+    'font.ttf',
+    'https://raw.githubusercontent.com/mitsukenn/Public_Relations/main/font.ttf'
+  ];
+  let buf = null;
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok && resp.headers.get('content-type') !== 'text/html') {
+        buf = await resp.arrayBuffer();
+        if (buf.byteLength > 100000) break;
+      }
+    } catch(e) {}
+    buf = null;
+  }
+  if (!buf) throw new Error('フォント読み込み失敗。インターネット接続を確認してください。');
   const bytes = new Uint8Array(buf);
   let binary = '';
   const chunk = 8192;

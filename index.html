@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>広報配信依頼書 - 長崎JC 第74年度</title>
+<script src="jspdf.umd.min.js"></script>
+<style>
+:root {
+  --primary: #1a56db;
+  --primary-light: #e8eefb;
+  --primary-dark: #1444a8;
+  --orange: #f59e0b;
+  --red: #ef4444;
+  --green: #22c55e;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --gray-900: #111827;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-900);
+  font-size: 15px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: var(--primary);
+  color: white;
+  padding: 14px 16px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.header h1 { font-size: 16px; font-weight: 700; }
+.header .subtitle { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+.tab-bar {
+  display: flex;
+  background: white;
+  border-bottom: 2px solid var(--gray-200);
+  position: sticky;
+  top: 52px;
+  z-index: 99;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.tab-btn.active {
+  color: var(--primary);
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 3px 3px 0 0;
+}
+
+.tab-content { display: none; padding: 16px; flex: 1; }
+.tab-content.active { display: block; }
+
+.form-group {
+  margin-bottom: 18px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+.form-group .hint {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: white;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+}
+
+textarea { resize: vertical; min-height: 60px; }
+
+.checkbox-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.checkbox-group input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+.row > * { flex: 1; }
+
+.char-count {
+  text-align: right;
+  font-size: 13px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.char-count.normal { color: var(--gray-500); }
+.char-count.warning { color: var(--orange); }
+.char-count.over { color: var(--red); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.btn-primary:active { background: var(--primary-dark); }
+.btn-secondary {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+.btn-secondary:active { background: var(--gray-300); }
+.btn-warning {
+  background: var(--orange);
+  color: white;
+}
+.btn-danger {
+  background: white;
+  color: var(--red);
+  border: 1.5px solid var(--red);
+}
+
+.check-results {
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: none;
+}
+.check-results.show { display: block; }
+.check-header {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.check-header.has-issues { background: #fef3c7; color: #92400e; }
+.check-header.all-clear { background: #dcfce7; color: #166534; }
+.check-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: white;
+  border-bottom: 1px solid var(--gray-100);
+  gap: 8px;
+}
+.check-item-text {
+  font-size: 13px;
+  flex: 1;
+}
+.check-item-text .before { color: var(--red); font-weight: 600; text-decoration: line-through; }
+.check-item-text .after { color: var(--green); font-weight: 600; }
+.check-item-text .note { color: var(--gray-500); font-size: 11px; display: block; }
+.btn-fix {
+  padding: 5px 12px;
+  border: 1.5px solid var(--primary);
+  background: white;
+  color: var(--primary);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-fix:active { background: var(--primary-light); }
+
+.preview-section {
+  background: white;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--gray-200);
+}
+.preview-section h3 {
+  font-size: 13px;
+  color: var(--primary);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.preview-row {
+  display: flex;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.preview-label {
+  color: var(--gray-500);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+.preview-value {
+  color: var(--gray-900);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.loading-overlay.show { display: flex; }
+.loading-box {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+}
+.loading-box .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.sns-footer-note {
+  background: var(--primary-light);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--primary-dark);
+  margin-top: 8px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>広報配信依頼書</h1>
+  <div class="subtitle">長崎JC 第74年度 広報委員会</div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="tab1">基本情報</button>
+  <button class="tab-btn" data-tab="tab2">配信内容</button>
+  <button class="tab-btn" data-tab="tab3">タグ・場所</button>
+  <button class="tab-btn" data-tab="tab4">確認・PDF</button>
+</div>
+
+<!-- タブ1: 基本情報 -->
+<div id="tab1" class="tab-content active">
+  <div class="form-group">
+    <label>配信依頼日時</label>
+    <div class="row">
+      <input type="date" id="deliveryDate">
+      <select id="deliveryHour">
+        <option value="">時</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>事業名・タイトル</label>
+    <textarea id="eventName" rows="2" placeholder="例: 4月人財室担当例会「KEEP GOING〜動けば、変わる〜」"></textarea>
+  </div>
+  <div class="form-group">
+    <label>責任者氏名</label>
+    <input type="text" id="responsible" placeholder="例: 横内">
+  </div>
+  <div class="form-group">
+    <label>委員会名</label>
+    <input type="text" id="committee" value="広報委員会">
+  </div>
+  <div class="form-group">
+    <label>広報委員会責任者</label>
+    <input type="text" id="prChief" placeholder="例: 中野">
+  </div>
+  <div class="form-group">
+    <label>配信依頼媒体</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="mediaFB" checked> Facebook</label>
+      <label><input type="checkbox" id="mediaIG" checked> Instagram</label>
+      <label><input type="checkbox" id="mediaX"> X</label>
+    </div>
+  </div>
+</div>
+
+<!-- タブ2: 配信内容 -->
+<div id="tab2" class="tab-content">
+  <div class="form-group">
+    <label>配信内容</label>
+    <div class="hint">500文字以内を目安にしてください</div>
+    <textarea id="content" rows="12" placeholder="配信する記事の内容を入力してください..."></textarea>
+    <div id="charCount" class="char-count normal">0 / 500文字</div>
+  </div>
+  <div class="sns-footer-note">
+    ※ 投稿の末尾には以下の定型文が自動追加されます：<br>
+    <strong>@jci.nagasaki<br>長崎青年会議所をもっと知りたい方は上記プロフィールリンクから公式HPをご覧下さい！！</strong>
+  </div>
+  <div style="margin-top: 14px;">
+    <button class="btn btn-warning" onclick="runWordCheck()">文言チェック実行</button>
+  </div>
+  <div id="checkResults" class="check-results"></div>
+</div>
+
+<!-- タブ3: タグ・場所 -->
+<div id="tab3" class="tab-content">
+  <div class="form-group">
+    <label>ハッシュタグ</label>
+    <div class="hint">「#長崎青年会議所 #長崎JC」は必須。追加タグを3つ以上入力してください</div>
+    <textarea id="hashtags" rows="3" placeholder="#長崎青年会議所 #長崎JC #KEEPGOING #習慣化 #大ぼらを夢に夢を現実に"></textarea>
+  </div>
+  <div class="form-group">
+    <label>タグ付け対象者（Facebook）</label>
+    <textarea id="tagFB" rows="2" placeholder="Facebookのタグ付け対象アカウント"></textarea>
+  </div>
+  <div class="form-group">
+    <label>タグ付け対象者（Instagram）</label>
+    <textarea id="tagIG" rows="2" placeholder="Instagramのタグ付け対象アカウント"></textarea>
+  </div>
+  <div class="form-group">
+    <label>場所（位置情報）</label>
+    <div class="hint">任意</div>
+    <input type="text" id="location" placeholder="例: 長崎市民会館">
+  </div>
+</div>
+
+<!-- タブ4: 確認・PDF -->
+<div id="tab4" class="tab-content">
+  <div id="previewArea"></div>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="generatePDF('share')">LINEで共有（PDF）</button>
+    <button class="btn btn-secondary" onclick="generatePDF('download')" style="margin-top:6px;">PDFダウンロード（保存）</button>
+    <button class="btn btn-danger" onclick="resetForm()">入力内容をリセット</button>
+  </div>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div>PDF生成中...</div>
+  </div>
+</div>
+
+<script>
+// --- タブ切り替え ---
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'tab4') buildPreview();
+  });
+});
+
+// --- 時間セレクト初期化 ---
+const hourSel = document.getElementById('deliveryHour');
+for (let h = 0; h < 24; h++) {
+  const opt = document.createElement('option');
+  opt.value = h;
+  opt.textContent = h + '時';
+  hourSel.appendChild(opt);
+}
+hourSel.value = '19';
+
+// --- 日付初期値 ---
+document.getElementById('deliveryDate').valueAsDate = new Date();
+
+// --- 文字数カウント ---
+const contentEl = document.getElementById('content');
+const charCountEl = document.getElementById('charCount');
+contentEl.addEventListener('input', updateCharCount);
+function updateCharCount() {
+  const len = contentEl.value.length;
+  charCountEl.textContent = len + ' / 500文字';
+  charCountEl.className = 'char-count ' + (len <= 400 ? 'normal' : len <= 500 ? 'warning' : 'over');
+}
+
+// --- 文言統一ルール（98項目） ---
+const wordRules = [
+  {before:'あらためて', after:'改めて'},
+  {before:'有る', after:'ある'},
+  {before:'有難う', after:'ありがとう'},
+  {before:'言う', after:'いう'},
+  {before:'如何', after:'いかが'},
+  {before:'委員の内', after:'委員のうち'},
+  {before:'いたします', after:'致します'},
+  {before:'頂きます', after:'いただきます'},
+  {before:'色々な', after:'いろいろな'},
+  {before:'受けとめる', after:'受け止める'},
+  {before:'おいそがしいなか', after:'お忙しい中'},
+  {before:'おおむね', after:'おおむね', note:'「概ね」は不可'},
+  {before:'概ね', after:'おおむね'},
+  {before:'凡そ', after:'おおよそ'},
+  {before:'および', after:'及び'},
+  {before:'且つ', after:'かつ'},
+  {before:'拘わらず', after:'かかわらず'},
+  {before:'ください', after:'下さい'},
+  {before:'これ位', after:'これぐらい'},
+  {before:'子供', after:'子ども'},
+  {before:'難しい事', after:'難しいこと'},
+  {before:'良い事', after:'良いこと'},
+  {before:'大きな事', after:'大きなこと'},
+  {before:'嬉しい事', after:'嬉しいこと'},
+  {before:'する事', after:'すること'},
+  {before:'した事', after:'したこと'},
+  {before:'な事', after:'なこと', note:'「○○な事」→「○○なこと」'},
+  {before:'先程', after:'先ほど'},
+  {before:'さらに', after:'更に'},
+  {before:'流石に', after:'さすがに'},
+  {before:'さま', after:'様'},
+  {before:'但し', after:'ただし'},
+  {before:'し易い', after:'しやすい'},
+  {before:'従って', after:'したがって'},
+  {before:'直ぐに', after:'すぐに'},
+  {before:'すごく', after:'凄く'},
+  {before:'すべて', after:'全て'},
+  {before:'ぜひ', after:'是非'},
+  {before:'沢山', after:'たくさん'},
+  {before:'只', after:'ただ'},
+  {before:'唯', after:'ただ'},
+  {before:'為', after:'ため', note:'文脈により判断'},
+  {before:'中々', after:'なかなか'},
+  {before:'尚', after:'なお'},
+  {before:'等', after:'など', note:'文脈により判断'},
+  {before:'ならびに', after:'並びに'},
+  {before:'何故', after:'なぜ'},
+  {before:'無い', after:'ない'},
+  {before:'筈', after:'はず'},
+  {before:'話し', after:'話', note:'名詞の場合'},
+  {before:'直向き', after:'ひたむき'},
+  {before:'人', after:'ひと', note:'文脈により判断'},
+  {before:'一人一人', after:'一人ひとり'},
+  {before:'ほか', after:'他'},
+  {before:'ほうが', after:'方が'},
+  {before:'欲しい', after:'ほしい'},
+  {before:'殆ど', after:'ほとんど'},
+  {before:'まいります', after:'参ります'},
+  {before:'街', after:'まち'},
+  {before:'町', after:'まち', note:'文脈により判断'},
+  {before:'ますます', after:'益々'},
+  {before:'先ず', after:'まず'},
+  {before:'又は', after:'または'},
+  {before:'未だ', after:'まだ'},
+  {before:'迄', after:'まで'},
+  {before:'かも知れない', after:'かもしれない'},
+  {before:'し易い', after:'しやすい'},
+  {before:'して行く', after:'していく'},
+  {before:'して良い', after:'してよい'},
+  {before:'して貰う', after:'してもらう'},
+  {before:'している所', after:'しているところ'},
+  {before:'するうえで', after:'する上で'},
+  {before:'たち', after:'達', note:'子どもたち→子ども達'},
+  {before:'というわけ', after:'という訳'},
+  {before:'のうえ', after:'の上'},
+  {before:'の下', after:'のもと', note:'○○のもと'},
+  {before:'の通り', after:'のとおり'},
+  {before:'のほう', after:'の方'},
+  {before:'に当たり', after:'にあたり'},
+  {before:'に亘り', after:'にわたり'},
+  {before:'物と', after:'ものと', note:'文脈により判断'},
+  {before:'をかける', after:'を掛ける'},
+  {before:'を以て', after:'をもって'},
+  {before:'皆様のなかには', after:'皆様の中には'},
+  {before:'齎す', after:'もたらす'},
+  {before:'若しくは', after:'もしくは'},
+  {before:'様に', after:'ように', note:'副詞の場合'},
+  {before:'よい', after:'良い', note:'形容詞の場合'},
+  {before:'よろしく', after:'宜しく'},
+  {before:'（一社）', after:'一般社団法人'},
+  {before:'（株）', after:'株式会社'},
+  {before:'（公社）', after:'公益社団法人'},
+  {before:'6ヶ月', after:'6か月'},
+  {before:'ヶ月', after:'か月'},
+  {before:'令和', after:'', note:'西暦で統一してください'},
+  {before:'英数字', after:'半角', note:'英数字は半角で統一'},
+];
+
+// 対内表記ルール
+const internalRules = [
+  {before:'長崎青年会議所', after:'長崎JC', note:'対内文書の場合'}
+];
+
+function runWordCheck() {
+  const text = contentEl.value;
+  const resultsEl = document.getElementById('checkResults');
+  const found = [];
+
+  // 通常ルール
+  wordRules.forEach(rule => {
+    if (text.includes(rule.before)) {
+      found.push(rule);
+    }
+  });
+
+  // 対内ルール
+  internalRules.forEach(rule => {
+    if (text.includes(rule.before)) {
+      found.push(rule);
+    }
+  });
+
+  if (found.length === 0) {
+    resultsEl.innerHTML = '<div class="check-header all-clear">文言チェック完了 - 修正候補はありません</div>';
+  } else {
+    let html = `<div class="check-header has-issues">${found.length}件の修正候補があります</div>`;
+    found.forEach((rule, i) => {
+      html += `<div class="check-item">
+        <div class="check-item-text">
+          <span class="before">${rule.before}</span> → <span class="after">${rule.after || '（確認）'}</span>
+          ${rule.note ? `<span class="note">${rule.note}</span>` : ''}
+        </div>
+        ${rule.after ? `<button class="btn-fix" onclick="applyFix(${i})">修正</button>` : ''}
+      </div>`;
+    });
+    html += `<div style="padding:10px 14px;">
+      <button class="btn btn-warning" onclick="applyAllFixes()" style="font-size:13px;padding:8px;">一括修正（注意付きを除く）</button>
+    </div>`;
+    resultsEl.innerHTML = html;
+    resultsEl._found = found;
+  }
+  resultsEl.classList.add('show');
+}
+
+function applyFix(index) {
+  const found = document.getElementById('checkResults')._found;
+  if (!found || !found[index] || !found[index].after) return;
+  const rule = found[index];
+  contentEl.value = contentEl.value.split(rule.before).join(rule.after);
+  updateCharCount();
+  runWordCheck();
+}
+
+function applyAllFixes() {
+  const found = document.getElementById('checkResults')._found;
+  if (!found) return;
+  found.forEach(rule => {
+    if (rule.after && !rule.note) {
+      contentEl.value = contentEl.value.split(rule.before).join(rule.after);
+    }
+  });
+  updateCharCount();
+  runWordCheck();
+}
+
+// --- プレビュー ---
+function getFormData() {
+  const dateVal = document.getElementById('deliveryDate').value;
+  const d = dateVal ? new Date(dateVal) : new Date();
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hour = document.getElementById('deliveryHour').value;
+  const media = [];
+  if (document.getElementById('mediaFB').checked) media.push('Facebook');
+  if (document.getElementById('mediaIG').checked) media.push('Instagram');
+  if (document.getElementById('mediaX').checked) media.push('X');
+
+  return {
+    month, day, hour,
+    dateStr: `${month}月${day}日 ${hour}時`,
+    eventName: document.getElementById('eventName').value,
+    responsible: document.getElementById('responsible').value,
+    committee: document.getElementById('committee').value,
+    prChief: document.getElementById('prChief').value,
+    media: media.join(' / '),
+    mediaList: media,
+    content: contentEl.value,
+    contentLen: contentEl.value.length,
+    hashtags: document.getElementById('hashtags').value,
+    tagFB: document.getElementById('tagFB').value,
+    tagIG: document.getElementById('tagIG').value,
+    location: document.getElementById('location').value,
+  };
+}
+
+function buildPreview() {
+  const d = getFormData();
+  const area = document.getElementById('previewArea');
+  area.innerHTML = `
+    <div class="preview-section">
+      <h3>基本情報</h3>
+      <div class="preview-row"><span class="preview-label">配信依頼日時</span><span class="preview-value">${d.dateStr}</span></div>
+      <div class="preview-row"><span class="preview-label">事業名</span><span class="preview-value">${d.eventName || '（未入力）'}</span></div>
+      <div class="preview-row"><span class="preview-label">責任者</span><span class="preview-value">${d.responsible || '（未入力）'}</span></div>
+      <div class="preview-row"><span class="preview-label">委員会名</span><span class="preview-value">${d.committee}</span></div>
+      <div class="preview-row"><span class="preview-label">広報責任者</span><span class="preview-value">${d.prChief || '（未入力）'}</span></div>
+      <div class="preview-row"><span class="preview-label">配信媒体</span><span class="preview-value">${d.media || '（未選択）'}</span></div>
+    </div>
+    <div class="preview-section">
+      <h3>配信内容（${d.contentLen}文字）</h3>
+      <div class="preview-value" style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${d.content || '（未入力）'}</div>
+    </div>
+    <div class="preview-section">
+      <h3>ハッシュタグ・タグ付け・場所</h3>
+      <div class="preview-row"><span class="preview-label">ハッシュタグ</span><span class="preview-value">${d.hashtags || '（未入力）'}</span></div>
+      <div class="preview-row"><span class="preview-label">タグ(Facebook)</span><span class="preview-value">${d.tagFB || '（なし）'}</span></div>
+      <div class="preview-row"><span class="preview-label">タグ(Instagram)</span><span class="preview-value">${d.tagIG || '（なし）'}</span></div>
+      <div class="preview-row"><span class="preview-label">場所</span><span class="preview-value">${d.location || '（なし）'}</span></div>
+    </div>`;
+}
+
+// --- リセット ---
+function resetForm() {
+  if (!confirm('入力内容をすべてリセットしますか？')) return;
+  document.getElementById('eventName').value = '';
+  document.getElementById('responsible').value = '';
+  document.getElementById('committee').value = '広報委員会';
+  document.getElementById('prChief').value = '';
+  contentEl.value = '';
+  document.getElementById('hashtags').value = '';
+  document.getElementById('tagFB').value = '';
+  document.getElementById('tagIG').value = '';
+  document.getElementById('location').value = '';
+  document.getElementById('deliveryDate').valueAsDate = new Date();
+  hourSel.value = '19';
+  document.getElementById('mediaFB').checked = true;
+  document.getElementById('mediaIG').checked = true;
+  document.getElementById('mediaX').checked = false;
+  updateCharCount();
+  document.getElementById('checkResults').classList.remove('show');
+}
+
+// --- フォントキャッシュ ---
+let cachedFontBase64 = null;
+
+async function loadFont() {
+  if (cachedFontBase64) return cachedFontBase64;
+  const fontUrl = 'font.ttf';
+  const resp = await fetch(fontUrl);
+  if (!resp.ok) throw new Error('フォント読み込み失敗。font.ttfが見つかりません。');
+  const buf = await resp.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+  }
+  cachedFontBase64 = btoa(binary);
+  return cachedFontBase64;
+}
+
+// --- PDF生成 ---
+async function generatePDF(mode) {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.add('show');
+
+  try {
+    const fontBase64 = await loadFont();
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+    doc.addFileToVFS('NotoSansJP-Regular.ttf', fontBase64);
+    doc.addFont('NotoSansJP-Regular.ttf', 'NotoSansJP', 'normal');
+    doc.setFont('NotoSansJP');
+
+    const d = getFormData();
+    const ml = 15, mt = 15;
+    const cw = 210 - ml - 15;
+
+    drawPage1(doc, d, ml, mt, cw);
+    doc.addPage();
+    drawPage2(doc, d, ml, mt, cw);
+
+    const fileName = `配信依頼書_${d.eventName || '未定'}.pdf`;
+
+    if (mode === 'share' && navigator.share) {
+      // Web Share API → LINEで共有
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      try {
+        await navigator.share({
+          title: '配信依頼書',
+          text: `【配信依頼書】${d.eventName || ''}`,
+          files: [file]
+        });
+      } catch (shareErr) {
+        if (shareErr.name !== 'AbortError') {
+          // 共有がキャンセルされた場合以外はダウンロードにフォールバック
+          doc.save(fileName);
+          alert('共有がサポートされていないため、PDFをダウンロードしました。');
+        }
+      }
+    } else if (mode === 'share' && !navigator.share) {
+      // Web Share API非対応ブラウザ
+      doc.save(fileName);
+      alert('お使いのブラウザではLINE共有に対応していません。PDFをダウンロードしました。\nスマホのブラウザ（Safari/Chrome）からお試しください。');
+    } else {
+      doc.save(fileName);
+    }
+  } catch (e) {
+    alert('PDF生成でエラーが発生しました: ' + e.message);
+    console.error(e);
+  } finally {
+    overlay.classList.remove('show');
+  }
+}
+
+function drawPage1(doc, d, ml, mt, cw) {
+  let y = mt;
+  const fs = { title: 16, label: 9, value: 10, small: 8 };
+
+  // タイトル
+  doc.setFontSize(fs.title);
+  doc.setFont('NotoSansJP', 'normal');
+  const titleW = doc.getTextWidth('広報配信依頼書');
+  doc.text('広報配信依頼書', ml + (cw - titleW) / 2, y + 8);
+  y += 16;
+
+  // 表形式
+  const labelW = 42;
+  const valW = cw - labelW;
+  const rowH = 10;
+  const rows = [
+    ['配信依頼日時', d.dateStr],
+    ['事業名・タイトル', d.eventName],
+    ['責任者氏名', d.responsible],
+    ['委員会名', d.committee],
+    ['広報委員会責任者', d.prChief],
+    ['配信依頼媒体', 'SNS（様式1）'],
+  ];
+
+  rows.forEach(([label, value], i) => {
+    const rh = (i === 1 && value && value.length > 30) ? 16 : rowH;
+    doc.setDrawColor(100, 100, 100);
+    doc.setFillColor(232, 238, 251);
+    doc.rect(ml, y, labelW, rh, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(ml + labelW, y, valW, rh, 'FD');
+
+    doc.setFontSize(fs.label);
+    doc.text(label, ml + 2, y + rh / 2 + 1.5, { baseline: 'middle' });
+    doc.setFontSize(fs.value);
+    if (i === 1 && value && value.length > 30) {
+      const lines = doc.splitTextToSize(value, valW - 4);
+      doc.text(lines, ml + labelW + 2, y + 4);
+    } else {
+      doc.text(value || '', ml + labelW + 2, y + rh / 2 + 1.5, { baseline: 'middle' });
+    }
+    y += rh;
+  });
+
+  y += 8;
+
+  // 配信依頼ルール
+  doc.setFontSize(fs.label);
+  doc.setFont('NotoSansJP', 'normal');
+  const rules = [
+    '【重要】配信依頼ルール',
+    '1) SNSは（Facebook Instagram）2媒体に同時配信します。',
+    '2) 画像や図画を必ず１枚以上添付してください。原則、画像や図画の無い投稿は認められません。',
+    '3) 講師のプロフィール、顔写真、会場写真を使用する場合、必ず使用の許可を得てください。',
+    '4) Instagramは３つ以上追加ハッシュタグを記載してください。',
+    '5) ホームページ掲載依頼は様式2に記載お願い致します。',
+  ];
+  rules.forEach((r, i) => {
+    if (i === 0) doc.setFontSize(10);
+    else doc.setFontSize(fs.small);
+    const lines = doc.splitTextToSize(r, cw);
+    doc.text(lines, ml, y);
+    y += lines.length * 4 + 2;
+  });
+
+  y += 6;
+
+  // 承認フロー
+  doc.setFontSize(fs.label);
+  const approvalRows = [
+    ['広報委員会担当者', '（確認）'],
+    ['広報委員会', '（確認）'],
+    ['想伝室長', '（確認）'],
+    ['想伝室担当副理事長', '（確認）'],
+    ['広報委員会にて配信', '（確認）'],
+  ];
+  const apH = 8;
+  approvalRows.forEach(([label, status]) => {
+    doc.setFillColor(232, 238, 251);
+    doc.rect(ml, y, labelW + 20, apH, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(ml + labelW + 20, y, cw - labelW - 20, apH, 'FD');
+    doc.setFontSize(fs.label);
+    doc.text(label, ml + 2, y + apH / 2 + 1, { baseline: 'middle' });
+    doc.text(status, ml + labelW + 22, y + apH / 2 + 1, { baseline: 'middle' });
+    y += apH;
+  });
+}
+
+function drawPage2(doc, d, ml, mt, cw) {
+  let y = mt;
+  const fs = { title: 14, label: 9, value: 9.5, small: 8 };
+
+  // タイトル
+  doc.setFontSize(fs.title);
+  const t2W = doc.getTextWidth('SNS配信依頼書');
+  doc.text('SNS配信依頼書', ml + (cw - t2W) / 2, y + 7);
+  y += 14;
+
+  const labelW = 35;
+  const valW = cw - labelW;
+  const rowH = 9;
+
+  // 日時 + 媒体
+  const infoRows = [
+    ['配信依頼日時', d.dateStr],
+    ['配信依頼媒体', d.media],
+  ];
+  infoRows.forEach(([label, value]) => {
+    doc.setDrawColor(100, 100, 100);
+    doc.setFillColor(232, 238, 251);
+    doc.rect(ml, y, labelW, rowH, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(ml + labelW, y, valW, rowH, 'FD');
+    doc.setFontSize(fs.label);
+    doc.text(label, ml + 2, y + rowH / 2 + 1, { baseline: 'middle' });
+    doc.setFontSize(fs.value);
+    doc.text(value || '', ml + labelW + 2, y + rowH / 2 + 1, { baseline: 'middle' });
+    y += rowH;
+  });
+
+  y += 4;
+
+  // 配信内容
+  doc.setFontSize(10);
+  doc.text('〇配信内容', ml, y);
+  y += 5;
+
+  doc.setDrawColor(100, 100, 100);
+  doc.setFontSize(fs.value);
+  const contentLines = doc.splitTextToSize(d.content || '', cw - 4);
+  const contentH = Math.max(contentLines.length * 4.5 + 8, 40);
+  doc.rect(ml, y, cw, contentH);
+  doc.text(contentLines, ml + 2, y + 4);
+
+  // 文字数表示
+  doc.setFontSize(fs.small);
+  doc.text(`${d.contentLen}/500`, ml + cw - 2, y + contentH - 2, { align: 'right' });
+  y += contentH + 4;
+
+  // 定型文
+  doc.setFontSize(7);
+  doc.setTextColor(120, 120, 120);
+  doc.text('@jci.nagasaki', ml + 2, y);
+  y += 3;
+  doc.text('長崎青年会議所をもっと知りたい方は上記プロフィールリンクから公式HPをご覧下さい！！', ml + 2, y);
+  doc.setTextColor(0, 0, 0);
+  y += 6;
+
+  // ハッシュタグ
+  doc.setFontSize(10);
+  doc.text('○ハッシュタグ', ml, y);
+  y += 5;
+  doc.setFontSize(fs.value);
+  const hashLines = doc.splitTextToSize(d.hashtags || '', cw - 4);
+  const hashH = Math.max(hashLines.length * 4.5 + 4, 10);
+  doc.rect(ml, y, cw, hashH);
+  doc.text(hashLines, ml + 2, y + 4);
+  y += hashH + 4;
+
+  // タグ付け対象者
+  doc.setFontSize(10);
+  doc.text('○タグ付け対象者（Facebook及びInstagram）', ml, y);
+  y += 5;
+  doc.setFontSize(fs.label);
+  doc.setFillColor(232, 238, 251);
+  doc.rect(ml, y, 25, 8, 'FD');
+  doc.rect(ml + 25, y, cw - 25, 8);
+  doc.text('Facebook', ml + 2, y + 5);
+  doc.setFontSize(fs.value);
+  doc.text(d.tagFB || '', ml + 27, y + 5);
+  y += 8;
+  doc.setFontSize(fs.label);
+  doc.setFillColor(232, 238, 251);
+  doc.rect(ml, y, 25, 8, 'FD');
+  doc.rect(ml + 25, y, cw - 25, 8);
+  doc.text('Instagram', ml + 2, y + 5);
+  doc.setFontSize(fs.value);
+  doc.text(d.tagIG || '', ml + 27, y + 5);
+  y += 12;
+
+  // 場所
+  doc.setFontSize(10);
+  doc.text('○場所（位置情報）※任意', ml, y);
+  y += 5;
+  doc.rect(ml, y, cw, 8);
+  doc.setFontSize(fs.value);
+  doc.text(d.location || '', ml + 2, y + 5);
+}
+</script>
+</body>
+</html>

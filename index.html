@@ -310,6 +310,84 @@ textarea { resize: vertical; min-height: 60px; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.img-upload-area {
+  border: 2px dashed var(--gray-300);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+.img-upload-area:active, .img-upload-area.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.img-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.img-card {
+  position: relative;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  touch-action: none;
+  user-select: none;
+}
+.img-card.dragging {
+  opacity: 0.4;
+  border-color: var(--primary);
+}
+.img-card.dragover-card {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(26,86,219,0.3);
+}
+.img-card img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+}
+.img-card-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--gray-50);
+  border-top: 1px solid var(--gray-200);
+}
+.img-card-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.img-card-del {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.img-card-grip {
+  cursor: grab;
+  color: var(--gray-500);
+  font-size: 16px;
+  padding: 0 4px;
+}
+.img-count {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 8px;
+  text-align: right;
+}
+
 .sns-footer-note {
   background: var(--primary-light);
   padding: 10px 12px;
@@ -333,6 +411,7 @@ textarea { resize: vertical; min-height: 60px; }
   <button class="tab-btn active" data-tab="tab1">基本情報</button>
   <button class="tab-btn" data-tab="tab2">配信内容</button>
   <button class="tab-btn" data-tab="tab3">タグ・場所</button>
+  <button class="tab-btn" data-tab="tabImg">画像</button>
   <button class="tab-btn" data-tab="tab4">確認・PDF</button>
 </div>
 
@@ -413,6 +492,20 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
+<!-- タブ: 画像 -->
+<div id="tabImg" class="tab-content">
+  <div class="form-group">
+    <label>掲載画像（最大10枚）</label>
+    <div class="hint">タップして画像を選択、またはドラッグ＆ドロップ。画像はドラッグで並べ替えできます。</div>
+    <div class="img-upload-area" id="imgUploadArea" onclick="document.getElementById('imgFileInput').click()">
+      + 画像を追加
+    </div>
+    <input type="file" id="imgFileInput" accept="image/*" multiple hidden>
+    <div class="img-count" id="imgCount">0 / 10枚</div>
+    <div class="img-grid" id="imgGrid"></div>
+  </div>
+</div>
+
 <!-- タブ4: 確認・PDF -->
 <div id="tab4" class="tab-content">
   <div id="previewArea"></div>
@@ -453,6 +546,121 @@ for (let h = 0; h < 24; h++) {
   hourSel.appendChild(opt);
 }
 hourSel.value = '19';
+
+// --- 画像管理 ---
+const uploadedImages = []; // [{dataUrl, name}]
+const imgFileInput = document.getElementById('imgFileInput');
+const imgGrid = document.getElementById('imgGrid');
+const imgUploadArea = document.getElementById('imgUploadArea');
+
+imgFileInput.addEventListener('change', (e) => {
+  addFiles(e.target.files);
+  imgFileInput.value = '';
+});
+
+// ドラッグ＆ドロップでファイル追加
+imgUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); imgUploadArea.classList.add('dragover'); });
+imgUploadArea.addEventListener('dragleave', () => imgUploadArea.classList.remove('dragover'));
+imgUploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  imgUploadArea.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+
+function addFiles(files) {
+  const remaining = 10 - uploadedImages.length;
+  const toAdd = Array.from(files).slice(0, remaining);
+  let loaded = 0;
+  toAdd.forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      // リサイズして保存（PDF用に最大1200px）
+      const img = new Image();
+      img.onload = () => {
+        const max = 1200;
+        let w = img.width, h = img.height;
+        if (w > max || h > max) {
+          if (w > h) { h = Math.round(h * max / w); w = max; }
+          else { w = Math.round(w * max / h); h = max; }
+        }
+        const cvs = document.createElement('canvas');
+        cvs.width = w; cvs.height = h;
+        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+        uploadedImages.push({ dataUrl: cvs.toDataURL('image/jpeg', 0.85), name: file.name });
+        loaded++;
+        if (loaded === toAdd.length) renderImageGrid();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderImageGrid() {
+  document.getElementById('imgCount').textContent = uploadedImages.length + ' / 10枚';
+  imgUploadArea.style.display = uploadedImages.length >= 10 ? 'none' : '';
+  imgGrid.innerHTML = '';
+  uploadedImages.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.draggable = true;
+    card.dataset.index = i;
+    card.innerHTML = `
+      <img src="${item.dataUrl}" alt="${i+1}枚目">
+      <div class="img-card-bar">
+        <span class="img-card-grip">☰</span>
+        <span class="img-card-num">${i+1}枚目</span>
+        <button class="img-card-del" onclick="removeImage(${i})">×</button>
+      </div>`;
+    // ドラッグで並べ替え
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', i);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('dragover-card'); });
+    card.addEventListener('dragleave', () => card.classList.remove('dragover-card'));
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('dragover-card');
+      const from = parseInt(e.dataTransfer.getData('text/plain'));
+      const to = i;
+      if (from !== to) {
+        const [moved] = uploadedImages.splice(from, 1);
+        uploadedImages.splice(to, 0, moved);
+        renderImageGrid();
+      }
+    });
+    // タッチ対応の並べ替え
+    let touchStartY = 0, touchIdx = -1;
+    card.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+      touchIdx = i;
+      card.classList.add('dragging');
+    }, { passive: true });
+    card.addEventListener('touchend', (e) => {
+      card.classList.remove('dragging');
+      if (touchIdx < 0) return;
+      const touch = e.changedTouches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const targetCard = target?.closest('.img-card');
+      if (targetCard && targetCard !== card) {
+        const to = parseInt(targetCard.dataset.index);
+        const [moved] = uploadedImages.splice(touchIdx, 1);
+        uploadedImages.splice(to, 0, moved);
+        renderImageGrid();
+      }
+      touchIdx = -1;
+    });
+    imgGrid.appendChild(card);
+  });
+}
+
+function removeImage(idx) {
+  uploadedImages.splice(idx, 1);
+  renderImageGrid();
+}
 
 // --- 日付初期値 ---
 document.getElementById('deliveryDate').valueAsDate = new Date();
@@ -688,6 +896,14 @@ function buildPreview() {
       <div class="preview-row"><span class="preview-label">タグ(Instagram)</span><span class="preview-value">${d.tagIG || '（なし）'}</span></div>
       <div class="preview-row"><span class="preview-label">場所</span><span class="preview-value">${d.location || '（なし）'}</span></div>
     </div>`;
+  if (uploadedImages.length > 0) {
+    let imgHtml = '<div class="preview-section"><h3>掲載画像（' + uploadedImages.length + '枚）</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">';
+    uploadedImages.forEach((img, i) => {
+      imgHtml += '<div style="text-align:center;"><img src="' + img.dataUrl + '" style="width:100%;border-radius:4px;aspect-ratio:4/3;object-fit:cover;"><div style="font-size:11px;color:#6b7280;">' + (i+1) + '枚目</div></div>';
+    });
+    imgHtml += '</div></div>';
+    area.innerHTML += imgHtml;
+  }
 }
 
 // --- リセット ---
@@ -709,6 +925,8 @@ function resetForm() {
   document.getElementById('mediaX').checked = false;
   updateCharCount();
   document.getElementById('checkResults').classList.remove('show');
+  uploadedImages.length = 0;
+  renderImageGrid();
 }
 
 // --- フォントキャッシュ ---
@@ -763,6 +981,12 @@ async function generatePDF(mode) {
     drawPage1(doc, d, ml, mt, cw);
     doc.addPage();
     drawPage2(doc, d, ml, mt, cw);
+
+    // 画像ページ（画像がある場合のみ）
+    if (uploadedImages.length > 0) {
+      doc.addPage();
+      drawPageImages(doc, ml, mt, cw);
+    }
 
     const fileName = `配信依頼書_${d.eventName || '未定'}.pdf`;
 
@@ -986,6 +1210,56 @@ function drawPage2(doc, d, ml, mt, cw) {
   doc.rect(ml, y, cw, 8);
   doc.setFontSize(fs.value);
   doc.text(d.location || '', ml + 2, y + 5);
+}
+
+function drawPageImages(doc, ml, mt, cw) {
+  const pageH = 297;
+  const cols = 2;
+  const gap = 6;
+  const imgW = (cw - gap) / cols;
+  const imgH = imgW * 0.75; // 4:3
+  const labelH = 6;
+  const cellH = imgH + labelH + 4;
+  let y = mt;
+
+  doc.setFontSize(12);
+  doc.setFont('NotoSansJP', 'normal');
+  const titleText = '◆画像◆';
+  const tw = doc.getTextWidth(titleText);
+  doc.text(titleText, ml + (cw - tw) / 2, y + 5);
+  y += 12;
+
+  uploadedImages.forEach((item, i) => {
+    const col = i % cols;
+    const x = ml + col * (imgW + gap);
+
+    // 新ページが必要か
+    if (col === 0 && i > 0 && y + cellH > pageH - 15) {
+      doc.addPage();
+      y = mt;
+    }
+
+    // 画像描画
+    try {
+      doc.addImage(item.dataUrl, 'JPEG', x, y, imgW, imgH);
+    } catch(e) {
+      doc.setDrawColor(200,200,200);
+      doc.rect(x, y, imgW, imgH);
+      doc.setFontSize(8);
+      doc.text('画像読込エラー', x + 2, y + imgH/2);
+    }
+
+    // 番号ラベル
+    doc.setFontSize(8);
+    doc.setFont('NotoSansJP', 'normal');
+    doc.text((i+1) + '枚目', x + imgW/2, y + imgH + 4, { align: 'center' });
+
+    // 2列目の後にy進める
+    if (col === 1 || i === uploadedImages.length - 1) {
+      if (col === 1) y += cellH;
+      else if (i === uploadedImages.length - 1 && col === 0) y += cellH;
+    }
+  });
 }
 </script>
 </body>

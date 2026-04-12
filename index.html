@@ -498,6 +498,49 @@ textarea { resize: vertical; min-height: 60px; }
   padding: 4px;
 }
 
+.update-banner {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1a56db, #2563eb);
+  color: white;
+  z-index: 200;
+  animation: slideDown 0.4s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.update-banner.show { display: block; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+.update-banner-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 14px 16px;
+}
+.update-banner h4 { font-size: 14px; margin-bottom: 6px; }
+.update-banner ul {
+  font-size: 12px;
+  opacity: 0.9;
+  padding-left: 18px;
+  margin-bottom: 10px;
+  line-height: 1.7;
+}
+.update-banner-btns {
+  display: flex;
+  gap: 8px;
+}
+.update-banner-btns button {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.update-btn-reload { background: white; color: var(--primary); }
+.update-btn-later { background: rgba(255,255,255,0.2); color: white; }
+
 .autosave-badge {
   font-size: 10px;
   color: var(--green);
@@ -521,7 +564,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver1.7</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver1.8</span></div>
 </div>
 
 <div class="main-wrap">
@@ -649,6 +692,18 @@ textarea { resize: vertical; min-height: 60px; }
 
 </div><!-- /main-wrap -->
 
+<!-- 更新通知バナー -->
+<div class="update-banner" id="updateBanner">
+  <div class="update-banner-inner">
+    <h4 id="updateTitle"></h4>
+    <ul id="updateChanges"></ul>
+    <div class="update-banner-btns">
+      <button class="update-btn-reload" onclick="location.reload(true)">今すぐ更新</button>
+      <button class="update-btn-later" onclick="dismissUpdate()">あとで</button>
+    </div>
+  </div>
+</div>
+
 <!-- ホーム画面追加バナー -->
 <div class="pwa-banner" id="pwaBanner">
   <div class="pwa-banner-inner">
@@ -669,6 +724,37 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <script>
+// --- バージョン管理・更新通知 ---
+const APP_VERSION = '1.8';
+const RELEASE_NOTES = {
+  '1.8': ['更新通知機能を追加', 'バージョン変更時に変更内容をお知らせ'],
+  '1.7': ['バージョン番号をヘッダーに表示'],
+  '1.6': ['入力内容の自動保存機能', 'テンプレート・ハッシュタグボタン（準備中）'],
+  '1.5': ['文言チェックを対外向けに変更', '対外表記ルールは「要確認」表示'],
+  '1.4': ['画像プレビューをInstagram 4:5に変更'],
+  '1.3': ['テキストのみコピーボタン追加'],
+  '1.2': ['画像アップロード・並べ替え・PDF埋め込み'],
+  '1.1': ['PC画面の横幅余白追加', 'フォント読み込み改善'],
+  '1.0': ['初版リリース'],
+};
+
+(function checkUpdate() {
+  const lastVer = localStorage.getItem('jc_pr_version');
+  if (lastVer && lastVer !== APP_VERSION) {
+    const title = document.getElementById('updateTitle');
+    const changes = document.getElementById('updateChanges');
+    title.textContent = 'ver' + APP_VERSION + ' に更新されました';
+    const notes = RELEASE_NOTES[APP_VERSION] || ['軽微な修正'];
+    changes.innerHTML = notes.map(n => '<li>' + n + '</li>').join('');
+    document.getElementById('updateBanner').classList.add('show');
+  }
+  localStorage.setItem('jc_pr_version', APP_VERSION);
+})();
+
+function dismissUpdate() {
+  document.getElementById('updateBanner').classList.remove('show');
+}
+
 // --- ホーム画面追加バナー ---
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {

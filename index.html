@@ -549,6 +549,64 @@ textarea { resize: vertical; min-height: 60px; }
   min-height: 18px;
 }
 
+.history-list {
+  margin-top: 12px;
+}
+.history-item {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.history-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-900);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-item-date {
+  font-size: 11px;
+  color: var(--gray-500);
+  white-space: nowrap;
+  margin-left: 8px;
+}
+.history-item-body {
+  font-size: 12px;
+  color: var(--gray-700);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.history-item-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.history-item-actions button {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--gray-300);
+  background: white;
+  color: var(--gray-700);
+}
+.history-item-actions button:active { background: var(--gray-100); }
+.history-item-actions .del-btn { color: var(--red); border-color: var(--red); }
+
 .sns-footer-note {
   background: var(--primary-light);
   padding: 10px 12px;
@@ -564,7 +622,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver1.8</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver1.9</span></div>
 </div>
 
 <div class="main-wrap">
@@ -574,6 +632,7 @@ textarea { resize: vertical; min-height: 60px; }
   <button class="tab-btn" data-tab="tab3">タグ・場所</button>
   <button class="tab-btn" data-tab="tabImg">画像</button>
   <button class="tab-btn" data-tab="tab4">確認・PDF</button>
+  <button class="tab-btn" data-tab="tabHistory">履歴</button>
 </div>
 <div class="autosave-badge" id="autosaveBadge"></div>
 
@@ -690,6 +749,16 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
+<!-- タブ: 履歴 -->
+<div id="tabHistory" class="tab-content">
+  <div class="form-group">
+    <label>過去の配信記事</label>
+    <div class="hint">PDF出力またはテキストコピー時に自動保存されます。画像は保存されません。</div>
+    <div id="historyList" class="history-list"></div>
+    <div id="historyEmpty" style="text-align:center;color:#6b7280;font-size:13px;padding:30px 0;">まだ履歴がありません</div>
+  </div>
+</div>
+
 </div><!-- /main-wrap -->
 
 <!-- 更新通知バナー -->
@@ -725,8 +794,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 const RELEASE_NOTES = {
+  '1.9': ['過去の配信記事の履歴機能を追加', '履歴から記事を読み込み・テキストコピー可能', '画像はサーバー・端末に保存しません'],
   '1.8': ['更新通知機能を追加', 'バージョン変更時に変更内容をお知らせ'],
   '1.7': ['バージョン番号をヘッダーに表示'],
   '1.6': ['入力内容の自動保存機能', 'テンプレート・ハッシュタグボタン（準備中）'],
@@ -753,6 +823,128 @@ const RELEASE_NOTES = {
 
 function dismissUpdate() {
   document.getElementById('updateBanner').classList.remove('show');
+}
+
+// --- 記事履歴管理 ---
+const HISTORY_KEY = 'jc_pr_history';
+const MAX_HISTORY = 30;
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch(e) { return []; }
+}
+
+function saveToHistory() {
+  const d = getFormData();
+  if (!d.content || d.content.trim().length < 5) return;
+  const entry = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    eventName: d.eventName,
+    content: d.content,
+    hashtags: d.hashtags,
+    dateStr: d.dateStr,
+    responsible: d.responsible,
+    prChief: d.prChief,
+    committee: d.committee,
+    media: d.media,
+    tagFB: d.tagFB,
+    tagIG: d.tagIG,
+    location: d.location,
+  };
+  const history = getHistory();
+  // 同じ内容の重複を防ぐ（直近5件）
+  const isDup = history.slice(0, 5).some(h => h.content === entry.content && h.eventName === entry.eventName);
+  if (isDup) return;
+  history.unshift(entry);
+  if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function renderHistory() {
+  const history = getHistory();
+  const list = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  if (history.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = history.map((h, i) => {
+    const d = new Date(h.date);
+    const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+    return `<div class="history-item">
+      <div class="history-item-header">
+        <span class="history-item-title">${h.eventName || '（事業名なし）'}</span>
+        <span class="history-item-date">${dateLabel}</span>
+      </div>
+      <div class="history-item-body">${h.content}</div>
+      <div class="history-item-actions">
+        <button onclick="loadFromHistory(${i})">この記事を読み込む</button>
+        <button onclick="copyHistoryText(${i})">テキストコピー</button>
+        <button class="del-btn" onclick="deleteHistory(${i})">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadFromHistory(idx) {
+  const history = getHistory();
+  const h = history[idx];
+  if (!h) return;
+  if (!confirm('現在の入力内容を上書きして、この記事を読み込みますか？')) return;
+  document.getElementById('eventName').value = h.eventName || '';
+  document.getElementById('content').value = h.content || '';
+  document.getElementById('hashtags').value = h.hashtags || '';
+  document.getElementById('responsible').value = h.responsible || '';
+  document.getElementById('prChief').value = h.prChief || '';
+  document.getElementById('committee').value = h.committee || '広報委員会';
+  document.getElementById('tagFB').value = h.tagFB || '';
+  document.getElementById('tagIG').value = h.tagIG || '';
+  document.getElementById('location').value = h.location || '';
+  updateCharCount();
+  autoSave();
+  // 配信内容タブに切り替え
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="tab2"]').classList.add('active');
+  document.getElementById('tab2').classList.add('active');
+}
+
+function copyHistoryText(idx) {
+  const h = getHistory()[idx];
+  if (!h) return;
+  const lines = [
+    '【' + (h.eventName || '') + '】',
+    '',
+    h.content || '',
+    '',
+    '@jci.nagasaki',
+    '長崎青年会議所をもっと知りたい方は上記プロフィールリンクから公式HPをご覧下さい！！',
+    '',
+    h.hashtags || '',
+  ];
+  const text = lines.join('\n').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    alert('テキストをコピーしました');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('テキストをコピーしました');
+  });
+}
+
+function deleteHistory(idx) {
+  if (!confirm('この履歴を削除しますか？')) return;
+  const history = getHistory();
+  history.splice(idx, 1);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistory();
 }
 
 // --- ホーム画面追加バナー ---
@@ -815,6 +1007,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'tab4') buildPreview();
+    if (btn.dataset.tab === 'tabHistory') renderHistory();
   });
 });
 
@@ -1284,6 +1477,7 @@ function buildPreview() {
 
 // --- リセット ---
 function copyTextToClipboard() {
+  saveToHistory();
   const d = getFormData();
   const lines = [
     `【${d.eventName || ''}】`,
@@ -1418,6 +1612,7 @@ async function generatePDF(mode) {
     } else {
       doc.save(fileName);
     }
+    saveToHistory();
   } catch (e) {
     alert('PDF生成でエラーが発生しました: ' + e.message);
     console.error(e);

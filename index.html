@@ -797,9 +797,11 @@ const wordRules = [
   {before:'英数字', after:'半角', note:'英数字は半角で統一'},
 ];
 
-// 対内表記ルール
-const internalRules = [
-  {before:'長崎青年会議所', after:'長崎JC', note:'対内文書の場合'}
+// 対外表記ルール
+const externalRules = [
+  {before:'長崎JC', after:'一般社団法人長崎青年会議所', note:'対外文書では正式名称を使用'},
+  {before:'第74年度', after:'2026年度', note:'対外文書では西暦表記'},
+  {before:'第73年度', after:'2025年度', note:'対外文書では西暦表記'},
 ];
 
 function runWordCheck() {
@@ -814,24 +816,25 @@ function runWordCheck() {
     }
   });
 
-  // 対内ルール
-  internalRules.forEach(rule => {
+  // 対外表記ルール（確認のみ）
+  externalRules.forEach(rule => {
     if (text.includes(rule.before)) {
-      found.push(rule);
+      found.push({...rule, confirmOnly: true});
     }
   });
 
   if (found.length === 0) {
     resultsEl.innerHTML = '<div class="check-header all-clear">文言チェック完了 - 修正候補はありません</div>';
   } else {
-    let html = `<div class="check-header has-issues">${found.length}件の修正候補があります</div>`;
+    let html = `<div class="check-header has-issues">${found.length}件のチェック結果があります</div>`;
     found.forEach((rule, i) => {
-      html += `<div class="check-item">
+      const isConfirm = rule.confirmOnly;
+      html += `<div class="check-item" style="${isConfirm ? 'background:#f0f9ff;' : ''}">
         <div class="check-item-text">
-          <span class="before">${rule.before}</span> → <span class="after">${rule.after || '（確認）'}</span>
-          ${rule.note ? `<span class="note">${rule.note}</span>` : ''}
+          <span class="${isConfirm ? 'after' : 'before'}">${rule.before}</span> → <span class="after">${rule.after || '（確認）'}</span>
+          ${rule.note ? `<span class="note">${isConfirm ? '⚠ 確認: ' : ''}${rule.note}</span>` : ''}
         </div>
-        ${rule.after ? `<button class="btn-fix" onclick="applyFix(${i})">修正</button>` : ''}
+        ${isConfirm ? '<span style="font-size:11px;color:#1a56db;font-weight:600;white-space:nowrap;">要確認</span>' : (rule.after ? `<button class="btn-fix" onclick="applyFix(${i})">修正</button>` : '')}
       </div>`;
     });
     html += `<div style="padding:10px 14px;">

@@ -347,11 +347,29 @@ textarea { resize: vertical; min-height: 60px; }
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(26,86,219,0.3);
 }
-.img-card img {
+.img-card-preview {
+  position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 4/5;
+  overflow: hidden;
+  background: #000;
+}
+.img-card-preview img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
+}
+.img-card-ratio {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
 }
 .img-card-bar {
   display: flex;
@@ -608,7 +626,10 @@ function renderImageGrid() {
     card.draggable = true;
     card.dataset.index = i;
     card.innerHTML = `
-      <img src="${item.dataUrl}" alt="${i+1}枚目">
+      <div class="img-card-preview">
+        <img src="${item.dataUrl}" alt="${i+1}枚目">
+        <span class="img-card-ratio">4:5</span>
+      </div>
       <div class="img-card-bar">
         <span class="img-card-grip">☰</span>
         <span class="img-card-num">${i+1}枚目</span>
@@ -900,7 +921,7 @@ function buildPreview() {
   if (uploadedImages.length > 0) {
     let imgHtml = '<div class="preview-section"><h3>掲載画像（' + uploadedImages.length + '枚）</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">';
     uploadedImages.forEach((img, i) => {
-      imgHtml += '<div style="text-align:center;"><img src="' + img.dataUrl + '" style="width:100%;border-radius:4px;aspect-ratio:4/3;object-fit:cover;"><div style="font-size:11px;color:#6b7280;">' + (i+1) + '枚目</div></div>';
+      imgHtml += '<div style="text-align:center;"><img src="' + img.dataUrl + '" style="width:100%;border-radius:4px;aspect-ratio:4/5;object-fit:cover;"><div style="font-size:11px;color:#6b7280;">' + (i+1) + '枚目</div></div>';
     });
     imgHtml += '</div></div>';
     area.innerHTML += imgHtml;
@@ -1245,7 +1266,7 @@ function drawPageImages(doc, ml, mt, cw) {
   const cols = 2;
   const gap = 6;
   const imgW = (cw - gap) / cols;
-  const imgH = imgW * 0.75; // 4:3
+  const imgH = imgW * 1.25; // 4:5 (Instagram縦長)
   const labelH = 6;
   const cellH = imgH + labelH + 4;
   let y = mt;

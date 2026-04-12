@@ -512,6 +512,7 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="btn-group">
     <button class="btn btn-primary" onclick="generatePDF('share')">LINEで共有（PDF）</button>
     <button class="btn btn-secondary" onclick="generatePDF('download')" style="margin-top:6px;">PDFダウンロード（保存）</button>
+    <button class="btn btn-secondary" onclick="copyTextToClipboard()" style="margin-top:6px;">テキストのみコピー</button>
     <button class="btn btn-danger" onclick="resetForm()">入力内容をリセット</button>
   </div>
 </div>
@@ -907,6 +908,33 @@ function buildPreview() {
 }
 
 // --- リセット ---
+function copyTextToClipboard() {
+  const d = getFormData();
+  const lines = [
+    `【${d.eventName || ''}】`,
+    '',
+    d.content || '',
+    '',
+    '@jci.nagasaki',
+    '長崎青年会議所をもっと知りたい方は上記プロフィールリンクから公式HPをご覧下さい！！',
+    '',
+    d.hashtags || '',
+  ];
+  const text = lines.join('\n').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    alert('配信テキストをクリップボードにコピーしました');
+  }).catch(() => {
+    // フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('配信テキストをクリップボードにコピーしました');
+  });
+}
+
 function resetForm() {
   if (!confirm('入力内容をすべてリセットしますか？')) return;
   document.getElementById('eventName').value = '';

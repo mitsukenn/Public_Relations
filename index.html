@@ -406,6 +406,65 @@ textarea { resize: vertical; min-height: 60px; }
   text-align: right;
 }
 
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+.modal-box h3 {
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+.modal-box p {
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.modal-box .mock {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--gray-700);
+  text-align: left;
+  margin-bottom: 16px;
+  line-height: 1.8;
+}
+.modal-box .mock-tag {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin: 2px;
+  cursor: pointer;
+}
+.autosave-badge {
+  font-size: 10px;
+  color: var(--green);
+  text-align: right;
+  padding: 4px 16px 0;
+  min-height: 18px;
+}
+
 .sns-footer-note {
   background: var(--primary-light);
   padding: 10px 12px;
@@ -431,6 +490,12 @@ textarea { resize: vertical; min-height: 60px; }
   <button class="tab-btn" data-tab="tab3">タグ・場所</button>
   <button class="tab-btn" data-tab="tabImg">画像</button>
   <button class="tab-btn" data-tab="tab4">確認・PDF</button>
+</div>
+<div class="autosave-badge" id="autosaveBadge"></div>
+
+<!-- Coming Soonモーダル -->
+<div class="modal-overlay" id="comingSoonModal" onclick="this.classList.remove('show')">
+  <div class="modal-box" id="comingSoonContent" onclick="event.stopPropagation()"></div>
 </div>
 
 <!-- タブ1: 基本情報 -->
@@ -475,6 +540,9 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="form-group">
     <label>配信内容</label>
     <div class="hint">500文字以内を目安にしてください</div>
+    <div style="margin-bottom:8px;">
+      <button class="btn btn-secondary" onclick="showComingSoon('template')" style="width:auto;padding:6px 14px;font-size:12px;">テンプレート挿入（準備中）</button>
+    </div>
     <textarea id="content" rows="12" placeholder="配信する記事の内容を入力してください..."></textarea>
     <div id="charCount" class="char-count normal">0 / 500文字</div>
   </div>
@@ -493,6 +561,9 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="form-group">
     <label>ハッシュタグ</label>
     <div class="hint">「#長崎青年会議所 #長崎JC」は必須。追加タグを3つ以上入力してください</div>
+    <div style="margin-bottom:8px;">
+      <button class="btn btn-secondary" onclick="showComingSoon('hashtag')" style="width:auto;padding:6px 14px;font-size:12px;">定型タグ挿入（準備中）</button>
+    </div>
     <textarea id="hashtags" rows="3" placeholder="#長崎青年会議所 #長崎JC #KEEPGOING #習慣化 #大ぼらを夢に夢を現実に"></textarea>
   </div>
   <div class="form-group">
@@ -686,6 +757,95 @@ function removeImage(idx) {
 
 // --- 日付初期値 ---
 document.getElementById('deliveryDate').valueAsDate = new Date();
+
+// --- localStorage自動保存・復元 ---
+const SAVE_KEY = 'jc_pr_draft';
+const saveFields = ['deliveryDate','deliveryHour','eventName','responsible','committee','prChief','mediaFB','mediaIG','mediaX','content','hashtags','tagFB','tagIG','location'];
+
+function autoSave() {
+  const data = {};
+  saveFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    data[id] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  const badge = document.getElementById('autosaveBadge');
+  badge.textContent = '自動保存しました（' + new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) + '）';
+  clearTimeout(badge._timer);
+  badge._timer = setTimeout(() => badge.textContent = '', 3000);
+}
+
+function loadSaved() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    saveFields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || data[id] === undefined) return;
+      if (el.type === 'checkbox') el.checked = data[id];
+      else el.value = data[id];
+    });
+    updateCharCount();
+  } catch(e) {}
+}
+
+// 保存済みデータがあれば復元
+loadSaved();
+
+// 全入力フィールドにautoSaveリスナーを設定
+saveFields.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', autoSave);
+});
+
+// --- Coming Soonポップアップ ---
+function showComingSoon(type) {
+  const modal = document.getElementById('comingSoonModal');
+  const box = document.getElementById('comingSoonContent');
+  if (type === 'template') {
+    box.innerHTML = `
+      <h3>テンプレート挿入（今後実装予定）</h3>
+      <p>ワンタップで配信内容の雛形を挿入できる機能です。</p>
+      <div class="mock">
+        <div style="font-weight:600;margin-bottom:6px;">利用イメージ:</div>
+        <span class="mock-tag">例会報告</span>
+        <span class="mock-tag">大会報告</span>
+        <span class="mock-tag">お知らせ</span>
+        <span class="mock-tag">懇親会報告</span>
+        <div style="margin-top:10px;color:#6b7280;">↓ タップすると以下のような雛形が挿入されます</div>
+        <div style="margin-top:8px;padding:8px;background:white;border-radius:4px;font-size:11px;">
+          【○月○○委員会担当例会「タイトル」】<br><br>
+          ○月○○委員会担当例会では○○委員会 役職 氏名 君より趣旨説明が行われ…<br><br>
+          本例会では○○様を講師にお迎えし「テーマ」についてご講演いただきました。<br><br>
+          …心より感謝申し上げます。
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="document.getElementById('comingSoonModal').classList.remove('show')">閉じる</button>`;
+  } else if (type === 'hashtag') {
+    box.innerHTML = `
+      <h3>定型タグ挿入（今後実装予定）</h3>
+      <p>よく使うハッシュタグをワンタップで挿入できる機能です。</p>
+      <div class="mock">
+        <div style="font-weight:600;margin-bottom:6px;">利用イメージ:</div>
+        <div style="margin-bottom:6px;">必須タグ（自動挿入）:</div>
+        <span class="mock-tag">#長崎青年会議所</span>
+        <span class="mock-tag">#長崎JC</span>
+        <span class="mock-tag">#大ぼらを夢に夢を現実に</span>
+        <div style="margin-top:10px;margin-bottom:6px;">選択タグ（タップで追加）:</div>
+        <span class="mock-tag">#例会</span>
+        <span class="mock-tag">#KEEPGOING</span>
+        <span class="mock-tag">#習慣化</span>
+        <span class="mock-tag">#サッカー大会</span>
+        <span class="mock-tag">#地域貢献</span>
+        <span class="mock-tag">#まちづくり</span>
+      </div>
+      <button class="btn btn-secondary" onclick="document.getElementById('comingSoonModal').classList.remove('show')">閉じる</button>`;
+  }
+  modal.classList.add('show');
+}
 
 // --- 文字数カウント ---
 const contentEl = document.getElementById('content');
@@ -979,6 +1139,7 @@ function resetForm() {
   document.getElementById('checkResults').classList.remove('show');
   uploadedImages.length = 0;
   renderImageGrid();
+  localStorage.removeItem(SAVE_KEY);
 }
 
 // --- フォントキャッシュ ---

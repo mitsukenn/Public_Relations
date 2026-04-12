@@ -607,6 +607,24 @@ textarea { resize: vertical; min-height: 60px; }
 .history-item-actions button:active { background: var(--gray-100); }
 .history-item-actions .del-btn { color: var(--red); border-color: var(--red); }
 
+.default-field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.default-field-row input { flex: 1; }
+.default-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
+}
+.default-badge.saved { background: #dcfce7; color: #166534; }
+.default-badge.unsaved { background: var(--gray-100); color: var(--gray-500); }
+
 .sns-footer-note {
   background: var(--primary-light);
   padding: 10px 12px;
@@ -622,7 +640,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver1.9</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.0</span></div>
 </div>
 
 <div class="main-wrap">
@@ -658,15 +676,24 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
   <div class="form-group">
     <label>責任者氏名</label>
-    <input type="text" id="responsible" placeholder="例: 横内">
+    <div class="default-field-row">
+      <input type="text" id="responsible" placeholder="例: 横内">
+      <button class="default-badge unsaved" id="defBadge_responsible" onclick="toggleDefault('responsible')">記憶する</button>
+    </div>
   </div>
   <div class="form-group">
     <label>委員会名</label>
-    <input type="text" id="committee" value="広報委員会">
+    <div class="default-field-row">
+      <input type="text" id="committee" value="広報委員会">
+      <button class="default-badge unsaved" id="defBadge_committee" onclick="toggleDefault('committee')">記憶する</button>
+    </div>
   </div>
   <div class="form-group">
     <label>広報委員会責任者</label>
-    <input type="text" id="prChief" placeholder="例: 中野">
+    <div class="default-field-row">
+      <input type="text" id="prChief" placeholder="例: 中野">
+      <button class="default-badge unsaved" id="defBadge_prChief" onclick="toggleDefault('prChief')">記憶する</button>
+    </div>
   </div>
   <div class="form-group">
     <label>配信依頼媒体</label>
@@ -794,8 +821,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '1.9';
+const APP_VERSION = '2.0';
 const RELEASE_NOTES = {
+  '2.0': ['責任者・委員会名・広報責任者を「記憶」できる機能追加', 'リセットしても記憶した値は残ります', '値を変更すると自動で記憶も更新されます'],
   '1.9': ['過去の配信記事の履歴機能を追加', '履歴から記事を読み込み・テキストコピー可能', '画像はサーバー・端末に保存しません'],
   '1.8': ['更新通知機能を追加', 'バージョン変更時に変更内容をお知らせ'],
   '1.7': ['バージョン番号をヘッダーに表示'],
@@ -1138,6 +1166,55 @@ function removeImage(idx) {
   uploadedImages.splice(idx, 1);
   renderImageGrid();
 }
+
+// --- デフォルト値（責任者・委員会・広報責任者） ---
+const DEFAULTS_KEY = 'jc_pr_defaults';
+const defaultFields = ['responsible', 'committee', 'prChief'];
+
+function loadDefaults() {
+  try {
+    const data = JSON.parse(localStorage.getItem(DEFAULTS_KEY)) || {};
+    defaultFields.forEach(id => {
+      const el = document.getElementById(id);
+      const badge = document.getElementById('defBadge_' + id);
+      if (data[id]) {
+        el.value = data[id];
+        badge.textContent = '記憶済';
+        badge.className = 'default-badge saved';
+      }
+    });
+  } catch(e) {}
+}
+
+function toggleDefault(id) {
+  const el = document.getElementById(id);
+  const badge = document.getElementById('defBadge_' + id);
+  const data = JSON.parse(localStorage.getItem(DEFAULTS_KEY) || '{}');
+  if (data[id]) {
+    delete data[id];
+    badge.textContent = '記憶する';
+    badge.className = 'default-badge unsaved';
+  } else {
+    if (!el.value.trim()) { alert('先に値を入力してください'); return; }
+    data[id] = el.value.trim();
+    badge.textContent = '記憶済';
+    badge.className = 'default-badge saved';
+  }
+  localStorage.setItem(DEFAULTS_KEY, JSON.stringify(data));
+}
+
+// 入力が変わったらデフォルトも自動更新（記憶済みの場合）
+defaultFields.forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const data = JSON.parse(localStorage.getItem(DEFAULTS_KEY) || '{}');
+    if (data[id]) {
+      data[id] = document.getElementById(id).value.trim();
+      localStorage.setItem(DEFAULTS_KEY, JSON.stringify(data));
+    }
+  });
+});
+
+loadDefaults();
 
 // --- 日付初期値 ---
 document.getElementById('deliveryDate').valueAsDate = new Date();
@@ -1507,9 +1584,11 @@ function copyTextToClipboard() {
 function resetForm() {
   if (!confirm('入力内容をすべてリセットしますか？')) return;
   document.getElementById('eventName').value = '';
-  document.getElementById('responsible').value = '';
-  document.getElementById('committee').value = '広報委員会';
-  document.getElementById('prChief').value = '';
+  // デフォルト値があれば復元、なければ空欄
+  const defs = JSON.parse(localStorage.getItem(DEFAULTS_KEY) || '{}');
+  document.getElementById('responsible').value = defs.responsible || '';
+  document.getElementById('committee').value = defs.committee || '広報委員会';
+  document.getElementById('prChief').value = defs.prChief || '';
   contentEl.value = '';
   document.getElementById('hashtags').value = '';
   document.getElementById('tagFB').value = '';

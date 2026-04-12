@@ -640,7 +640,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.2</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.3</span></div>
 </div>
 
 <div class="main-wrap">
@@ -821,8 +821,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 const RELEASE_NOTES = {
+  '2.3': ['PDFファイル名を「広報配信依頼書_0416_事業名.pdf」形式に変更'],
   '2.2': ['アプリアイコンのロゴサイズを拡大（視認性向上）'],
   '2.1': ['アプリアイコンをJCI Nagasaki公式ロゴに変更'],
   '2.0': ['責任者・委員会名・広報責任者を「記憶」できる機能追加', 'リセットしても記憶した値は残ります', '値を変更すると自動で記憶も更新されます'],
@@ -1667,7 +1668,9 @@ async function generatePDF(mode) {
       drawPageImages(doc, ml, mt, cw);
     }
 
-    const fileName = `配信依頼書_${d.eventName || '未定'}.pdf`;
+    const mm = String(d.month).padStart(2,'0');
+    const dd = String(d.day).padStart(2,'0');
+    const fileName = `広報配信依頼書_${mm}${dd}_${d.eventName || '未定'}.pdf`;
 
     if (mode === 'share' && navigator.share) {
       // Web Share API → LINEで共有

@@ -640,7 +640,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.3</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.4</span></div>
 </div>
 
 <div class="main-wrap">
@@ -821,8 +821,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.4';
 const RELEASE_NOTES = {
+  '2.4': ['文言チェックの誤検出を大幅修正（人・話し・様に等の誤爆解消）', 'PDF旧漢字対応（﨑・髙・濱・邊・國・眞・龍など表示可能に）'],
   '2.3': ['PDFファイル名を「広報配信依頼書_0416_事業名.pdf」形式に変更'],
   '2.2': ['アプリアイコンのロゴサイズを拡大（視認性向上）'],
   '2.1': ['アプリアイコンをJCI Nagasaki公式ロゴに変更'],
@@ -1323,10 +1324,10 @@ function updateCharCount() {
 
 // --- 文言統一ルール（98項目） ---
 const wordRules = [
+  // --- 安全なルール（自動修正OK） ---
   {before:'あらためて', after:'改めて'},
   {before:'有る', after:'ある'},
   {before:'有難う', after:'ありがとう'},
-  {before:'言う', after:'いう'},
   {before:'如何', after:'いかが'},
   {before:'委員の内', after:'委員のうち'},
   {before:'いたします', after:'致します'},
@@ -1334,13 +1335,10 @@ const wordRules = [
   {before:'色々な', after:'いろいろな'},
   {before:'受けとめる', after:'受け止める'},
   {before:'おいそがしいなか', after:'お忙しい中'},
-  {before:'おおむね', after:'おおむね', note:'「概ね」は不可'},
   {before:'概ね', after:'おおむね'},
   {before:'凡そ', after:'おおよそ'},
-  {before:'および', after:'及び'},
   {before:'且つ', after:'かつ'},
   {before:'拘わらず', after:'かかわらず'},
-  {before:'ください', after:'下さい'},
   {before:'これ位', after:'これぐらい'},
   {before:'子供', after:'子ども'},
   {before:'難しい事', after:'難しいこと'},
@@ -1349,76 +1347,53 @@ const wordRules = [
   {before:'嬉しい事', after:'嬉しいこと'},
   {before:'する事', after:'すること'},
   {before:'した事', after:'したこと'},
-  {before:'な事', after:'なこと', note:'「○○な事」→「○○なこと」'},
+  {before:'ない事', after:'ないこと'},
   {before:'先程', after:'先ほど'},
-  {before:'さらに', after:'更に'},
   {before:'流石に', after:'さすがに'},
-  {before:'さま', after:'様'},
   {before:'但し', after:'ただし'},
   {before:'し易い', after:'しやすい'},
   {before:'従って', after:'したがって'},
   {before:'直ぐに', after:'すぐに'},
-  {before:'すごく', after:'凄く'},
-  {before:'すべて', after:'全て'},
-  {before:'ぜひ', after:'是非'},
   {before:'沢山', after:'たくさん'},
-  {before:'只', after:'ただ'},
-  {before:'唯', after:'ただ'},
-  {before:'為', after:'ため', note:'文脈により判断'},
   {before:'中々', after:'なかなか'},
-  {before:'尚', after:'なお'},
-  {before:'等', after:'など', note:'文脈により判断'},
-  {before:'ならびに', after:'並びに'},
   {before:'何故', after:'なぜ'},
   {before:'無い', after:'ない'},
   {before:'筈', after:'はず'},
-  {before:'話し', after:'話', note:'名詞の場合'},
   {before:'直向き', after:'ひたむき'},
-  {before:'人', after:'ひと', note:'文脈により判断'},
   {before:'一人一人', after:'一人ひとり'},
-  {before:'ほか', after:'他'},
-  {before:'ほうが', after:'方が'},
-  {before:'欲しい', after:'ほしい'},
   {before:'殆ど', after:'ほとんど'},
   {before:'まいります', after:'参ります'},
-  {before:'街', after:'まち'},
-  {before:'町', after:'まち', note:'文脈により判断'},
-  {before:'ますます', after:'益々'},
   {before:'先ず', after:'まず'},
   {before:'又は', after:'または'},
   {before:'未だ', after:'まだ'},
   {before:'迄', after:'まで'},
   {before:'かも知れない', after:'かもしれない'},
-  {before:'し易い', after:'しやすい'},
   {before:'して行く', after:'していく'},
   {before:'して良い', after:'してよい'},
   {before:'して貰う', after:'してもらう'},
   {before:'している所', after:'しているところ'},
   {before:'するうえで', after:'する上で'},
-  {before:'たち', after:'達', note:'子どもたち→子ども達'},
   {before:'というわけ', after:'という訳'},
-  {before:'のうえ', after:'の上'},
-  {before:'の下', after:'のもと', note:'○○のもと'},
   {before:'の通り', after:'のとおり'},
-  {before:'のほう', after:'の方'},
   {before:'に当たり', after:'にあたり'},
   {before:'に亘り', after:'にわたり'},
-  {before:'物と', after:'ものと', note:'文脈により判断'},
   {before:'をかける', after:'を掛ける'},
   {before:'を以て', after:'をもって'},
   {before:'皆様のなかには', after:'皆様の中には'},
   {before:'齎す', after:'もたらす'},
   {before:'若しくは', after:'もしくは'},
-  {before:'様に', after:'ように', note:'副詞の場合'},
-  {before:'よい', after:'良い', note:'形容詞の場合'},
   {before:'よろしく', after:'宜しく'},
   {before:'（一社）', after:'一般社団法人'},
   {before:'（株）', after:'株式会社'},
   {before:'（公社）', after:'公益社団法人'},
-  {before:'6ヶ月', after:'6か月'},
   {before:'ヶ月', after:'か月'},
-  {before:'令和', after:'', note:'西暦で統一してください'},
-  {before:'英数字', after:'半角', note:'英数字は半角で統一'},
+  {before:'ならびに', after:'並びに'},
+  {before:'欲しい', after:'ほしい'},
+  {before:'ほうが', after:'方が'},
+  {before:'ますます', after:'益々'},
+  {before:'及び', after:'及び'},
+  // --- 確認のみ（自動修正しない・confirmOnly） ---
+  {before:'令和', after:'西暦', note:'西暦で統一してください', confirmOnly:true},
 ];
 
 // 対外表記ルール

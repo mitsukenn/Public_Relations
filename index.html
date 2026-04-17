@@ -700,7 +700,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.5</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.6</span></div>
 </div>
 
 <div class="main-wrap">
@@ -891,8 +891,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '2.5';
+const APP_VERSION = '2.6';
 const RELEASE_NOTES = {
+  '2.6': ['予定タブの種別バッジを削除（シンプル化）'],
   '2.5': ['「予定」タブ追加 - Googleスプレッドシートから事業予定を自動読み込み', '事業をタップして下書き作成が可能に', 'JCニュース配信予定も表示', '担当チーム表示対応'],
   '2.4': ['文言チェックの誤検出を大幅修正（人・話し・様に等の誤爆解消）', 'PDF旧漢字対応（﨑・髙・濱・邊・國・眞・龍など表示可能に）'],
   '2.3': ['PDFファイル名を「広報配信依頼書_0416_事業名.pdf」形式に変更'],
@@ -1014,8 +1015,6 @@ function scheduleCardHTML(d, dow, isPast) {
   const m = (dt.getMonth()+1) + '月';
   const day = dt.getDate();
   const w = dow[dt.getDay()];
-  const type = d['種別'] || 'その他';
-  const badgeClass = 'badge-' + (['例会','大会','JCニュース'].includes(type) ? type : 'その他');
   const team = d['担当チーム'] ? '<span>' + d['担当チーム'] + '</span>' : '';
   const committee = d['担当委員会'] ? '<span>' + d['担当委員会'] + '</span>' : '';
   const note = d['備考'] ? '<span>' + d['備考'] + '</span>' : '';
@@ -1026,7 +1025,7 @@ function scheduleCardHTML(d, dow, isPast) {
     + '<div class="schedule-date"><div class="month">' + m + '</div><div class="day">' + day + '</div><div class="dow">' + w + '</div></div>'
     + '<div class="schedule-info">'
     + '<div class="title">' + d['事業名'] + '</div>'
-    + '<div class="meta"><span class="schedule-badge ' + badgeClass + '">' + type + '</span>' + committee + team + note + '</div>'
+    + '<div class="meta">' + committee + team + note + '</div>'
     + (isPast ? '' : '<button class="schedule-draft-btn" onclick="startDraftFromSchedule(\'' + eventName.replace(/'/g, "\\'") + '\',\'' + dateStr + '\')">この事業の下書きを作成</button>')
     + '</div></div>';
 }

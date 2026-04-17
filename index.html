@@ -67,6 +67,62 @@ body {
 }
 .tab-bar::-webkit-scrollbar { display: none; }
 
+.subtab-bar {
+  display: flex;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  margin: -16px -16px 16px -16px;
+  padding: 0 4px;
+}
+.subtab-bar::-webkit-scrollbar { display: none; }
+.subtab-btn {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+}
+.subtab-btn.active { color: var(--primary); }
+.subtab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+.subtab-content { display: none; }
+.subtab-content.active { display: block; }
+
+.sheet-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--gray-700);
+  text-decoration: none;
+  margin: 8px 0;
+}
+.sheet-link-btn:active { background: var(--gray-200); }
+.sheet-link-btn::before {
+  content: '📊';
+  font-size: 14px;
+}
+
 .tab-btn {
   flex: 0 0 auto;
   min-width: 64px;
@@ -780,17 +836,14 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.8</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.9</span></div>
 </div>
 
 <div class="main-wrap">
 <div class="tab-bar">
-  <button class="tab-btn active" data-tab="tab1">基本情報</button>
-  <button class="tab-btn" data-tab="tab2">配信内容</button>
-  <button class="tab-btn" data-tab="tab3">タグ・場所</button>
-  <button class="tab-btn" data-tab="tabImg">画像</button>
+  <button class="tab-btn active" data-tab="tabSchedule">予定</button>
+  <button class="tab-btn" data-tab="tabEdit">記事作成</button>
   <button class="tab-btn" data-tab="tab4">確認・PDF</button>
-  <button class="tab-btn" data-tab="tabSchedule">予定</button>
   <button class="tab-btn" data-tab="tabHistory">履歴</button>
 </div>
 <div class="autosave-badge" id="autosaveBadge"></div>
@@ -801,7 +854,14 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <!-- タブ1: 基本情報 -->
-<div id="tab1" class="tab-content active">
+<div id="tabEdit" class="tab-content">
+<div class="subtab-bar">
+  <button class="subtab-btn active" data-subtab="tab1">基本情報</button>
+  <button class="subtab-btn" data-subtab="tab2">配信内容</button>
+  <button class="subtab-btn" data-subtab="tab3">タグ・場所</button>
+  <button class="subtab-btn" data-subtab="tabImg">画像</button>
+</div>
+<div id="tab1" class="subtab-content active">
   <div class="form-group">
     <label>配信依頼日時</label>
     <div class="row">
@@ -847,7 +907,7 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <!-- タブ2: 配信内容 -->
-<div id="tab2" class="tab-content">
+<div id="tab2" class="subtab-content">
   <div class="form-group">
     <label>配信内容</label>
     <div class="hint">500文字以内を目安にしてください</div>
@@ -868,7 +928,7 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <!-- タブ3: タグ・場所 -->
-<div id="tab3" class="tab-content">
+<div id="tab3" class="subtab-content">
   <div class="form-group">
     <label>ハッシュタグ</label>
     <div class="hint">「#長崎青年会議所 #長崎JC」は必須。追加タグを3つ以上入力してください</div>
@@ -893,7 +953,7 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <!-- タブ: 画像 -->
-<div id="tabImg" class="tab-content">
+<div id="tabImg" class="subtab-content">
   <div class="form-group">
     <label>掲載画像（最大10枚）</label>
     <div class="hint">タップして画像を選択、またはドラッグ＆ドロップ。画像はドラッグで並べ替えできます。</div>
@@ -906,6 +966,17 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
+</div><!-- /tabEdit -->
+
+<!-- タブ: 予定（ホーム） -->
+<div id="tabSchedule" class="tab-content active">
+  <div class="form-group">
+    <label>事業予定・JCニュース配信予定</label>
+    <a class="sheet-link-btn" href="https://docs.google.com/spreadsheets/d/1TWH8n3k3nUnwgLH7lab73ryHHL_WcksXIbxKWT-PVIA/edit" target="_blank" rel="noopener">Googleスプレッドシートを開く（編集）</a>
+    <div id="scheduleList" class="schedule-loading">読み込み中...</div>
+  </div>
+</div>
+
 <!-- タブ4: 確認・PDF -->
 <div id="tab4" class="tab-content">
   <div id="previewArea"></div>
@@ -914,15 +985,6 @@ textarea { resize: vertical; min-height: 60px; }
     <button class="btn btn-secondary" onclick="generatePDF('download')" style="margin-top:6px;">PDFダウンロード（保存）</button>
     <button class="btn btn-secondary" onclick="copyTextToClipboard()" style="margin-top:6px;">テキストのみコピー</button>
     <button class="btn btn-danger" onclick="resetForm()">入力内容をリセット</button>
-  </div>
-</div>
-
-<!-- タブ: 予定 -->
-<div id="tabSchedule" class="tab-content">
-  <div class="form-group">
-    <label>事業予定・JCニュース配信予定</label>
-    <div class="hint">Googleスプレッドシートから自動読み込み。タップして下書きを作成できます。</div>
-    <div id="scheduleList" class="schedule-loading">読み込み中...</div>
   </div>
 </div>
 
@@ -971,8 +1033,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '2.8';
+const APP_VERSION = '2.9';
 const RELEASE_NOTES = {
+  '2.9': ['メインタブを4つに整理（予定 / 記事作成 / 確認・PDF / 履歴）', '「予定」をホームタブに（起動時に最初に表示）', '記事作成は基本情報・配信内容・タグ・画像のサブタブに集約', 'スプレッドシートへの直接リンク追加'],
   '2.8': ['タブバーを横スクロールのみに修正'],
   '2.7': ['予定タブをカレンダービューに刷新', '事業予定（青）と広報配信予定（緑）を色分け表示', '今日の日付をハイライト', '月送り対応', '日付タップで詳細＆下書き作成'],
   '2.6': ['予定タブの種別バッジを削除（シンプル化）'],
@@ -1207,11 +1270,7 @@ function startDraftFromSchedule(eventName, dateStr) {
   const d = String(parts[1]).padStart(2,'0');
   document.getElementById('deliveryDate').value = y + '-' + m + '-' + d;
   autoSave();
-  // 配信内容タブに切り替え
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector('[data-tab="tab2"]').classList.add('active');
-  document.getElementById('tab2').classList.add('active');
+  switchToEditSubtab('tab2');
   alert('「' + eventName + '」の下書きを開始します。配信内容を入力してください。');
 }
 
@@ -1295,11 +1354,7 @@ function loadFromHistory(idx) {
   document.getElementById('location').value = h.location || '';
   updateCharCount();
   autoSave();
-  // 配信内容タブに切り替え
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector('[data-tab="tab2"]').classList.add('active');
-  document.getElementById('tab2').classList.add('active');
+  switchToEditSubtab('tab2');
 }
 
 function copyHistoryText(idx) {
@@ -1401,6 +1456,34 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'tabHistory') renderHistory();
   });
 });
+
+// --- サブタブ切り替え ---
+document.querySelectorAll('.subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.subtab).classList.add('active');
+  });
+});
+
+// --- 起動時に予定タブを読み込む ---
+setTimeout(() => loadSchedule(), 100);
+
+// --- 記事作成の下書き開始時にサブタブ「配信内容」に切り替える ---
+function switchToEditSubtab(subtabId) {
+  // メインタブを記事作成に
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="tabEdit"]').classList.add('active');
+  document.getElementById('tabEdit').classList.add('active');
+  // サブタブ切り替え
+  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
+  const sub = document.querySelector('[data-subtab="' + subtabId + '"]');
+  if (sub) sub.classList.add('active');
+  document.getElementById(subtabId).classList.add('active');
+}
 
 // --- 時間セレクト初期化 ---
 const hourSel = document.getElementById('deliveryHour');

@@ -61,14 +61,16 @@ body {
   top: 52px;
   z-index: 99;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
 }
 .tab-bar::-webkit-scrollbar { display: none; }
 
 .tab-btn {
-  flex: 1;
-  min-width: 80px;
-  padding: 12px 8px;
+  flex: 0 0 auto;
+  min-width: 64px;
+  padding: 12px 10px;
   border: none;
   background: transparent;
   font-size: 12px;
@@ -778,7 +780,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.7</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.8</span></div>
 </div>
 
 <div class="main-wrap">
@@ -969,8 +971,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '2.7';
+const APP_VERSION = '2.8';
 const RELEASE_NOTES = {
+  '2.8': ['タブバーを横スクロールのみに修正'],
   '2.7': ['予定タブをカレンダービューに刷新', '事業予定（青）と広報配信予定（緑）を色分け表示', '今日の日付をハイライト', '月送り対応', '日付タップで詳細＆下書き作成'],
   '2.6': ['予定タブの種別バッジを削除（シンプル化）'],
   '2.5': ['「予定」タブ追加 - Googleスプレッドシートから事業予定を自動読み込み', '事業をタップして下書き作成が可能に', 'JCニュース配信予定も表示', '担当チーム表示対応'],

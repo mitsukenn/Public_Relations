@@ -836,7 +836,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver2.9</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver3.0</span></div>
 </div>
 
 <div class="main-wrap">
@@ -860,6 +860,7 @@ textarea { resize: vertical; min-height: 60px; }
   <button class="subtab-btn" data-subtab="tab2">配信内容</button>
   <button class="subtab-btn" data-subtab="tab3">タグ・場所</button>
   <button class="subtab-btn" data-subtab="tabImg">画像</button>
+  <button class="subtab-btn" data-subtab="tabDrafts">下書き一覧</button>
 </div>
 <div id="tab1" class="subtab-content active">
   <div class="form-group">
@@ -966,6 +967,15 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
+<div id="tabDrafts" class="subtab-content">
+  <div class="form-group">
+    <label>下書き一覧</label>
+    <div class="hint">予定タブから下書き作成したものや、作業途中の記事が表示されます</div>
+    <div id="draftsList"></div>
+    <div id="draftsEmpty" style="text-align:center;color:#6b7280;font-size:13px;padding:30px 0;">下書きがありません</div>
+  </div>
+</div>
+
 </div><!-- /tabEdit -->
 
 <!-- タブ: 予定（ホーム） -->
@@ -1033,8 +1043,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '2.9';
+const APP_VERSION = '3.0';
 const RELEASE_NOTES = {
+  '3.0': ['カレンダー詳細表示を強化（担当委員会・チーム・配信予定日・下書き状況）', '配信予定日をカレンダーに緑で別表示', '記事作成に「下書き一覧」サブタブ追加', '下書きの自動保存・編集再開対応'],
   '2.9': ['メインタブを4つに整理（予定 / 記事作成 / 確認・PDF / 履歴）', '「予定」をホームタブに（起動時に最初に表示）', '記事作成は基本情報・配信内容・タグ・画像のサブタブに集約', 'スプレッドシートへの直接リンク追加'],
   '2.8': ['タブバーを横スクロールのみに修正'],
   '2.7': ['予定タブをカレンダービューに刷新', '事業予定（青）と広報配信予定（緑）を色分け表示', '今日の日付をハイライト', '月送り対応', '日付タップで詳細＆下書き作成'],
@@ -1131,11 +1142,28 @@ let calYear, calMonth;
 function renderSchedule(data) {
   const container = document.getElementById('scheduleList');
   // 日付をパース
-  const events = data.map(d => {
+  const events = [];
+  data.forEach(d => {
     const parts = d['日付'].split('/');
-    const date = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]||1));
+    const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]||1));
     const isPR = (d['種別']||'').includes('JCニュース') || (d['備考']||'').includes('配信');
-    return {...d, _date: date, _isPR: isPR};
+    // 事業予定日を追加
+    events.push({...d, _date: eventDate, _isPR: isPR, _kind: 'event'});
+    // 配信予定日があれば別エントリとして追加
+    const deliveryDateStr = d['配信予定日'] || '';
+    if (deliveryDateStr && !isPR) {
+      const dParts = deliveryDateStr.split('/');
+      if (dParts.length >= 2) {
+        const deliveryDate = new Date(
+          parseInt(dParts[0]),
+          parseInt(dParts[1])-1,
+          parseInt(dParts[2]||1)
+        );
+        if (!isNaN(deliveryDate)) {
+          events.push({...d, _date: deliveryDate, _isPR: true, _kind: 'delivery', _linkEvent: d['事業名']});
+        }
+      }
+    }
   });
   window._calEvents = events;
   renderCalendar();
@@ -1241,18 +1269,39 @@ function showDayDetail(key) {
     return;
   }
   const parts = key.split('-');
+  const drafts = getDrafts();
   let html = '<h4>' + parts[1] + '/' + parts[2] + ' の予定</h4>';
   dayEvents.forEach(e => {
+    const eventName = e['事業名'];
     const committee = e['担当委員会'] || '';
     const team = e['担当チーム'] || '';
     const note = e['備考'] || '';
-    const meta = [committee, team, note].filter(Boolean).join(' / ');
-    const eventName = e['事業名'].replace(/"/g, '&quot;').replace(/'/g, "\\'");
-    const dateStr = parts[1] + '/' + parts[2];
+    const delivery = e['配信予定日'] || '';
+    const eventDateStr = e['日付'] || '';
+    const metaLines = [];
+    if (committee) metaLines.push('<div>👥 担当委員会: <strong>' + committee + '</strong></div>');
+    if (team) metaLines.push('<div>🏷️ 担当チーム: <strong>' + team + '</strong></div>');
+    if (e._kind === 'delivery') {
+      metaLines.push('<div>📅 事業予定日: ' + eventDateStr + '</div>');
+      metaLines.push('<div>📣 配信予定日: <strong>' + parts[1] + '/' + parts[2] + '</strong></div>');
+    } else {
+      if (delivery) metaLines.push('<div>📣 配信予定日: ' + delivery + '</div>');
+    }
+    if (note) metaLines.push('<div>📝 ' + note + '</div>');
+
+    // 下書き状況
+    const hasDraft = drafts.some(d => d.eventName === eventName);
+    const draftStatus = hasDraft
+      ? '<span style="color:#166534;background:#dcfce7;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ 下書きあり</span>'
+      : '<span style="color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">下書き未作成</span>';
+
+    const nameEscaped = eventName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const targetDate = e._kind === 'delivery' ? (parts[1] + '/' + parts[2]) : eventDateStr.split('/').slice(1).join('/');
+
     html += '<div class="cal-detail-item">';
-    html += '<div class="title">' + (e._isPR ? '📗 ' : '📘 ') + e['事業名'] + '</div>';
-    if (meta) html += '<div class="meta">' + meta + '</div>';
-    html += '<button class="schedule-draft-btn" onclick="startDraftFromSchedule(\'' + eventName + '\',\'' + dateStr + '\')">この事業の下書きを作成</button>';
+    html += '<div class="title">' + (e._isPR ? '📗 ' : '📘 ') + eventName + ' ' + draftStatus + '</div>';
+    if (metaLines.length) html += '<div class="meta" style="display:block;line-height:1.8;">' + metaLines.join('') + '</div>';
+    html += '<button class="schedule-draft-btn" onclick="startDraftFromSchedule(\'' + nameEscaped + '\',\'' + targetDate + '\')">' + (hasDraft ? '下書きを編集' : 'この事業の下書きを作成') + '</button>';
     html += '</div>';
   });
   detail.innerHTML = html;
@@ -1260,18 +1309,101 @@ function showDayDetail(key) {
   detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function startDraftFromSchedule(eventName, dateStr) {
-  document.getElementById('eventName').value = eventName;
-  // 日付を設定
-  const parts = dateStr.split('/');
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(parts[0]).padStart(2,'0');
-  const d = String(parts[1]).padStart(2,'0');
-  document.getElementById('deliveryDate').value = y + '-' + m + '-' + d;
+// --- 下書き管理 ---
+const DRAFTS_KEY = 'jc_pr_drafts';
+function getDrafts() {
+  try { return JSON.parse(localStorage.getItem(DRAFTS_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveDraft(draft) {
+  const drafts = getDrafts();
+  const idx = drafts.findIndex(d => d.eventName === draft.eventName);
+  const entry = {...draft, updatedAt: Date.now()};
+  if (idx >= 0) drafts[idx] = entry;
+  else drafts.unshift(entry);
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+}
+function removeDraft(eventName) {
+  const drafts = getDrafts().filter(d => d.eventName !== eventName);
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+}
+function renderDrafts() {
+  const list = document.getElementById('draftsList');
+  const empty = document.getElementById('draftsEmpty');
+  if (!list) return;
+  const drafts = getDrafts();
+  if (drafts.length === 0) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = drafts.map((d, i) => {
+    const dt = new Date(d.updatedAt || 0);
+    const dateLabel = (dt.getMonth()+1) + '/' + dt.getDate() + ' ' + dt.getHours() + ':' + String(dt.getMinutes()).padStart(2,'0');
+    const contentPreview = (d.content || '').substring(0, 60) || '（本文未入力）';
+    return '<div class="history-item">'
+      + '<div class="history-item-header">'
+      + '<span class="history-item-title">' + (d.eventName || '（事業名なし）') + '</span>'
+      + '<span class="history-item-date">更新: ' + dateLabel + '</span>'
+      + '</div>'
+      + '<div class="history-item-body">' + contentPreview + '</div>'
+      + '<div class="history-item-actions">'
+      + '<button onclick="loadDraft(' + i + ')">編集を続ける</button>'
+      + '<button class="del-btn" onclick="deleteDraft(' + i + ')">削除</button>'
+      + '</div></div>';
+  }).join('');
+}
+function loadDraft(idx) {
+  const d = getDrafts()[idx];
+  if (!d) return;
+  document.getElementById('eventName').value = d.eventName || '';
+  document.getElementById('content').value = d.content || '';
+  document.getElementById('hashtags').value = d.hashtags || '';
+  document.getElementById('tagFB').value = d.tagFB || '';
+  document.getElementById('tagIG').value = d.tagIG || '';
+  document.getElementById('location').value = d.location || '';
+  if (d.deliveryDate) document.getElementById('deliveryDate').value = d.deliveryDate;
+  updateCharCount();
   autoSave();
   switchToEditSubtab('tab2');
-  alert('「' + eventName + '」の下書きを開始します。配信内容を入力してください。');
+}
+function deleteDraft(idx) {
+  if (!confirm('この下書きを削除しますか？')) return;
+  const drafts = getDrafts();
+  drafts.splice(idx, 1);
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+  renderDrafts();
+}
+
+function startDraftFromSchedule(eventName, dateStr) {
+  // 既存の下書きがあれば読み込み
+  const existing = getDrafts().find(d => d.eventName === eventName);
+  if (existing) {
+    const idx = getDrafts().findIndex(d => d.eventName === eventName);
+    loadDraft(idx);
+    return;
+  }
+  document.getElementById('eventName').value = eventName;
+  // 日付を設定
+  const parts = (dateStr || '').split('/');
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(parts[0] || (now.getMonth()+1)).padStart(2,'0');
+  const d = String(parts[1] || now.getDate()).padStart(2,'0');
+  const dateVal = y + '-' + m + '-' + d;
+  document.getElementById('deliveryDate').value = dateVal;
+  // 新規下書きとして保存
+  saveDraft({
+    eventName: eventName,
+    deliveryDate: dateVal,
+    content: '',
+    hashtags: document.getElementById('hashtags').value || '',
+    tagFB: '', tagIG: '', location: ''
+  });
+  autoSave();
+  switchToEditSubtab('tab2');
+  alert('「' + eventName + '」の下書きを開始しました。配信内容を入力してください。');
 }
 
 // --- 記事履歴管理 ---
@@ -1464,6 +1596,7 @@ document.querySelectorAll('.subtab-btn').forEach(btn => {
     document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.dataset.subtab).classList.add('active');
+    if (btn.dataset.subtab === 'tabDrafts') renderDrafts();
   });
 });
 
@@ -1677,6 +1810,24 @@ function autoSave() {
     data[id] = el.type === 'checkbox' ? el.checked : el.value;
   });
   localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  // 事業名があれば下書きも自動更新
+  if (typeof getDrafts === 'function') {
+    const evName = data.eventName;
+    if (evName && evName.trim()) {
+      const drafts = getDrafts();
+      if (drafts.some(d => d.eventName === evName)) {
+        saveDraft({
+          eventName: evName,
+          deliveryDate: data.deliveryDate || '',
+          content: data.content || '',
+          hashtags: data.hashtags || '',
+          tagFB: data.tagFB || '',
+          tagIG: data.tagIG || '',
+          location: data.location || '',
+        });
+      }
+    }
+  }
   const badge = document.getElementById('autosaveBadge');
   badge.textContent = '自動保存しました（' + new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) + '）';
   clearTimeout(badge._timer);

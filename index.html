@@ -836,7 +836,7 @@ textarea { resize: vertical; min-height: 60px; }
 
 <div class="header">
   <h1>広報配信依頼書</h1>
-  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver3.0</span></div>
+  <div class="subtitle">長崎JC 第74年度 広報委員会 <span style="opacity:0.7;">ver3.1</span></div>
 </div>
 
 <div class="main-wrap">
@@ -1043,8 +1043,9 @@ textarea { resize: vertical; min-height: 60px; }
 
 <script>
 // --- バージョン管理・更新通知 ---
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.1';
 const RELEASE_NOTES = {
+  '3.1': ['スプレッドシートの日付フォーマットを柔軟に解釈（4月15日・2026/4/15など）', '予定がある月を自動で最初に表示'],
   '3.0': ['カレンダー詳細表示を強化（担当委員会・チーム・配信予定日・下書き状況）', '配信予定日をカレンダーに緑で別表示', '記事作成に「下書き一覧」サブタブ追加', '下書きの自動保存・編集再開対応'],
   '2.9': ['メインタブを4つに整理（予定 / 記事作成 / 確認・PDF / 履歴）', '「予定」をホームタブに（起動時に最初に表示）', '記事作成は基本情報・配信内容・タグ・画像のサブタブに集約', 'スプレッドシートへの直接リンク追加'],
   '2.8': ['タブバーを横スクロールのみに修正'],
@@ -1139,33 +1140,52 @@ function parseCSV(csv) {
 let calYear, calMonth;
 (function() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); })();
 
+// 日付文字列をDateに変換（複数フォーマット対応）
+function parseDateString(s, defaultYear) {
+  if (!s) return null;
+  s = String(s).trim();
+  // "2026/4/15" / "2026-4-15"
+  let m = s.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  // "4/15" / "4-15"
+  m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
+  if (m) return new Date(defaultYear, parseInt(m[1])-1, parseInt(m[2]));
+  // "4月15日" / "2026年4月15日"
+  m = s.match(/^(?:(\d{4})年)?(\d{1,2})月(\d{1,2})日?/);
+  if (m) return new Date(parseInt(m[1]||defaultYear), parseInt(m[2])-1, parseInt(m[3]));
+  // Dateパース試行
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
 function renderSchedule(data) {
   const container = document.getElementById('scheduleList');
-  // 日付をパース
+  const thisYear = new Date().getFullYear();
   const events = [];
   data.forEach(d => {
-    const parts = d['日付'].split('/');
-    const eventDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]||1));
-    const isPR = (d['種別']||'').includes('JCニュース') || (d['備考']||'').includes('配信');
+    const eventDate = parseDateString(d['日付'], thisYear);
+    if (!eventDate) return;
+    const isPR = (d['種別']||'').includes('JCニュース') || (d['事業名']||'').includes('JCニュース');
     // 事業予定日を追加
     events.push({...d, _date: eventDate, _isPR: isPR, _kind: 'event'});
     // 配信予定日があれば別エントリとして追加
-    const deliveryDateStr = d['配信予定日'] || '';
-    if (deliveryDateStr && !isPR) {
-      const dParts = deliveryDateStr.split('/');
-      if (dParts.length >= 2) {
-        const deliveryDate = new Date(
-          parseInt(dParts[0]),
-          parseInt(dParts[1])-1,
-          parseInt(dParts[2]||1)
-        );
-        if (!isNaN(deliveryDate)) {
-          events.push({...d, _date: deliveryDate, _isPR: true, _kind: 'delivery', _linkEvent: d['事業名']});
-        }
-      }
+    const deliveryDate = parseDateString(d['配信予定日'], thisYear);
+    if (deliveryDate && !isPR) {
+      events.push({...d, _date: deliveryDate, _isPR: true, _kind: 'delivery', _linkEvent: d['事業名']});
     }
   });
   window._calEvents = events;
+  // 初回表示時は最初のイベントがある月にジャンプ
+  if (events.length && !window._calInitialized) {
+    const sorted = [...events].sort((a,b) => a._date - b._date);
+    const today = new Date();
+    const upcoming = sorted.find(e => e._date >= today) || sorted[0];
+    if (upcoming) {
+      calYear = upcoming._date.getFullYear();
+      calMonth = upcoming._date.getMonth();
+    }
+    window._calInitialized = true;
+  }
   renderCalendar();
 }
 
